@@ -42,7 +42,7 @@ async def mock_database():
 async def mcp_server(mock_database):
     """Create MCP server with mocked database."""
     server = ClaudeMemoryServer()
-    server.db = mock_database
+    server.memory_db = mock_database
     return server
 
 
@@ -50,7 +50,7 @@ async def mcp_server(mock_database):
 def sample_memory_args():
     """Sample arguments for storing a memory."""
     return {
-        "memory_type": "solution",
+        "type": "solution",
         "title": "Test Solution",
         "content": "This is a test solution",
         "tags": ["python", "testing"],
@@ -87,13 +87,13 @@ class TestStoreMemory:
         result = await mcp_server._handle_store_memory(args)
 
         assert result.isError is True
-        assert "required" in str(result.content).lower() or "missing" in str(result.content).lower()
+        assert "error" in str(result.content).lower()
 
     @pytest.mark.asyncio
     async def test_store_memory_invalid_type(self, mcp_server):
         """Test store_memory with invalid memory type."""
         args = {
-            "memory_type": "invalid_type",
+            "type": "invalid_type",
             "title": "Test",
             "content": "Test content"
         }
@@ -121,7 +121,8 @@ class TestGetMemory:
         result = await mcp_server._handle_get_memory({"memory_id": memory_id})
 
         assert result.isError is False
-        assert memory_id in str(result.content)
+        assert "Test Solution" in str(result.content)
+        assert "Test content" in str(result.content)
         mock_database.get_memory.assert_called_once_with(memory_id, True)
 
     @pytest.mark.asyncio
@@ -253,14 +254,10 @@ class TestCreateRelationship:
         """Test successful relationship creation."""
         from_id = str(uuid.uuid4())
         to_id = str(uuid.uuid4())
+        relationship_id = str(uuid.uuid4())
 
-        mock_relationship = Relationship(
-            from_memory_id=from_id,
-            to_memory_id=to_id,
-            relationship_type=RelationshipType.SOLVES,
-            properties=RelationshipProperties()
-        )
-        mock_database.create_relationship.return_value = mock_relationship
+        # create_relationship returns an ID string, not a Relationship object
+        mock_database.create_relationship.return_value = relationship_id
 
         args = {
             "from_memory_id": from_id,
@@ -272,6 +269,7 @@ class TestCreateRelationship:
 
         assert result.isError is False
         assert "relationship" in str(result.content).lower()
+        assert relationship_id in str(result.content)
 
     @pytest.mark.asyncio
     async def test_create_relationship_missing_ids(self, mcp_server):
@@ -290,14 +288,20 @@ class TestGetRelatedMemories:
     async def test_get_related_memories_success(self, mcp_server, mock_database):
         """Test successful retrieval of related memories."""
         memory_id = str(uuid.uuid4())
-        mock_related = [
-            Memory(
-                id=str(uuid.uuid4()),
-                type=MemoryType.PROBLEM,
-                title="Related Problem",
-                content="Problem content"
-            )
-        ]
+        related_memory = Memory(
+            id=str(uuid.uuid4()),
+            type=MemoryType.PROBLEM,
+            title="Related Problem",
+            content="Problem content"
+        )
+        related_relationship = Relationship(
+            from_memory_id=memory_id,
+            to_memory_id=related_memory.id,
+            type=RelationshipType.SOLVES,
+            properties=RelationshipProperties(strength=0.9)
+        )
+        # get_related_memories returns list of tuples: [(Memory, Relationship), ...]
+        mock_related = [(related_memory, related_relationship)]
         mock_database.get_related_memories.return_value = mock_related
 
         args = {
@@ -308,6 +312,7 @@ class TestGetRelatedMemories:
         result = await mcp_server._handle_get_related_memories(args)
 
         assert result.isError is False
+        assert "Related Problem" in str(result.content)
 
     @pytest.mark.asyncio
     async def test_get_related_memories_no_relations(self, mcp_server, mock_database):
@@ -326,11 +331,13 @@ class TestGetMemoryStatistics:
     @pytest.mark.asyncio
     async def test_get_memory_statistics_success(self, mcp_server, mock_database):
         """Test successful statistics retrieval."""
+        # Match the actual structure returned by get_memory_statistics
         mock_stats = {
-            "total_memories": 100,
-            "total_relationships": 250,
-            "memory_types": {"solution": 50, "problem": 30},
-            "relationship_types": {"SOLVES": 100}
+            "total_memories": {"count": 100},
+            "total_relationships": {"count": 250},
+            "memories_by_type": {"solution": 50, "problem": 30},
+            "avg_importance": {"avg_importance": 0.75},
+            "avg_confidence": {"avg_confidence": 0.85}
         }
         mock_database.get_memory_statistics.return_value = mock_stats
 

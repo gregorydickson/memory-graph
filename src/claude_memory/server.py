@@ -33,6 +33,11 @@ from .models import (
     RelationshipProperties,
     SearchQuery,
     MemoryContext,
+    MemoryError,
+    MemoryNotFoundError,
+    RelationshipError,
+    ValidationError as MemoryValidationError,
+    DatabaseConnectionError,
 )
 
 
@@ -294,9 +299,10 @@ class ClaudeMemoryServer:
                         content=[TextContent(
                             type="text",
                             text="Error: Memory database not initialized"
-                        )]
+                        )],
+                        isError=True
                     )
-                
+
                 if request.name == "store_memory":
                     return await self._handle_store_memory(request.arguments)
                 elif request.name == "get_memory":
@@ -318,16 +324,18 @@ class ClaudeMemoryServer:
                         content=[TextContent(
                             type="text",
                             text=f"Unknown tool: {request.name}"
-                        )]
+                        )],
+                        isError=True
                     )
-            
+
             except Exception as e:
                 logger.error(f"Error handling tool call {request.name}: {e}")
                 return CallToolResult(
                     content=[TextContent(
                         type="text",
                         text=f"Error: {str(e)}"
-                    )]
+                    )],
+                    isError=True
                 )
     
     async def initialize(self):
@@ -335,14 +343,14 @@ class ClaudeMemoryServer:
         try:
             # Initialize Neo4j connection
             self.db_connection = Neo4jConnection()
-            self.db_connection.connect()
-            
+            await self.db_connection.connect()
+
             # Initialize memory database
             self.memory_db = MemoryDatabase(self.db_connection)
             await self.memory_db.initialize_schema()
-            
+
             logger.info("Claude Memory Server initialized successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to initialize server: {e}")
             raise
@@ -350,7 +358,7 @@ class ClaudeMemoryServer:
     async def cleanup(self):
         """Clean up resources."""
         if self.db_connection:
-            self.db_connection.close()
+            await self.db_connection.close()
         logger.info("Claude Memory Server cleanup completed")
     
     async def _handle_store_memory(self, arguments: Dict[str, Any]) -> CallToolResult:
@@ -360,7 +368,7 @@ class ClaudeMemoryServer:
             context = None
             if "context" in arguments:
                 context = MemoryContext(**arguments["context"])
-            
+
             # Create memory object
             memory = Memory(
                 type=MemoryType(arguments["type"]),
@@ -371,42 +379,53 @@ class ClaudeMemoryServer:
                 importance=arguments.get("importance", 0.5),
                 context=context
             )
-            
+
             # Store in database
-            memory_id = self.memory_db.store_memory(memory)
-            
+            memory_id = await self.memory_db.store_memory(memory)
+
             return CallToolResult(
                 content=[TextContent(
                     type="text",
                     text=f"Memory stored successfully with ID: {memory_id}"
                 )]
             )
-            
-        except ValidationError as e:
+
+        except (ValidationError, KeyError, ValueError) as e:
             return CallToolResult(
                 content=[TextContent(
                     type="text",
                     text=f"Validation error: {e}"
-                )]
+                )],
+                isError=True
+            )
+        except Exception as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to store memory: {e}"
+                )],
+                isError=True
             )
     
     async def _handle_get_memory(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle get_memory tool call."""
-        memory_id = arguments["memory_id"]
-        include_relationships = arguments.get("include_relationships", True)
-        
-        memory = self.memory_db.get_memory(memory_id, include_relationships)
-        
-        if not memory:
-            return CallToolResult(
-                content=[TextContent(
-                    type="text",
-                    text=f"Memory not found: {memory_id}"
-                )]
-            )
-        
-        # Format memory for display
-        memory_text = f"""**Memory: {memory.title}**
+        try:
+            memory_id = arguments["memory_id"]
+            include_relationships = arguments.get("include_relationships", True)
+
+            memory = await self.memory_db.get_memory(memory_id, include_relationships)
+
+            if not memory:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"Memory not found: {memory_id}"
+                    )],
+                    isError=True
+                )
+
+            # Format memory for display
+            memory_text = f"""**Memory: {memory.title}**
 Type: {memory.type.value}
 Created: {memory.created_at}
 Importance: {memory.importance}
@@ -414,13 +433,29 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
 
 **Content:**
 {memory.content}"""
-        
-        if memory.summary:
-            memory_text = f"**Summary:** {memory.summary}\n\n" + memory_text
-        
-        return CallToolResult(
-            content=[TextContent(type="text", text=memory_text)]
-        )
+
+            if memory.summary:
+                memory_text = f"**Summary:** {memory.summary}\n\n" + memory_text
+
+            return CallToolResult(
+                content=[TextContent(type="text", text=memory_text)]
+            )
+        except KeyError as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Missing required field: {e}"
+                )],
+                isError=True
+            )
+        except Exception as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to get memory: {e}"
+                )],
+                isError=True
+            )
     
     async def _handle_search_memories(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle search_memories tool call."""
@@ -435,7 +470,7 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
                 limit=arguments.get("limit", 20)
             )
             
-            memories = self.memory_db.search_memories(search_query)
+            memories = await self.memory_db.search_memories(search_query)
             
             if not memories:
                 return CallToolResult(
@@ -464,72 +499,118 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
                 content=[TextContent(
                     type="text",
                     text=f"Invalid search parameters: {e}"
-                )]
+                )],
+                isError=True
+            )
+        except Exception as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to search memories: {e}"
+                )],
+                isError=True
             )
     
     async def _handle_update_memory(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle update_memory tool call."""
-        memory_id = arguments["memory_id"]
-        
-        # Get existing memory
-        memory = self.memory_db.get_memory(memory_id, include_relationships=False)
-        if not memory:
+        try:
+            memory_id = arguments["memory_id"]
+
+            # Get existing memory
+            memory = await self.memory_db.get_memory(memory_id, include_relationships=False)
+            if not memory:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"Memory not found: {memory_id}"
+                    )],
+                    isError=True
+                )
+
+            # Update fields
+            if "title" in arguments:
+                memory.title = arguments["title"]
+            if "content" in arguments:
+                memory.content = arguments["content"]
+            if "summary" in arguments:
+                memory.summary = arguments["summary"]
+            if "tags" in arguments:
+                memory.tags = arguments["tags"]
+            if "importance" in arguments:
+                memory.importance = arguments["importance"]
+
+            # Update in database
+            success = await self.memory_db.update_memory(memory)
+
+            if success:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"Memory updated successfully: {memory_id}"
+                    )]
+                )
+            else:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"Failed to update memory: {memory_id}"
+                    )],
+                    isError=True
+                )
+        except KeyError as e:
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text=f"Memory not found: {memory_id}"
-                )]
+                    text=f"Missing required field: {e}"
+                )],
+                isError=True
             )
-        
-        # Update fields
-        if "title" in arguments:
-            memory.title = arguments["title"]
-        if "content" in arguments:
-            memory.content = arguments["content"]
-        if "summary" in arguments:
-            memory.summary = arguments["summary"]
-        if "tags" in arguments:
-            memory.tags = arguments["tags"]
-        if "importance" in arguments:
-            memory.importance = arguments["importance"]
-        
-        # Update in database
-        success = self.memory_db.update_memory(memory)
-        
-        if success:
+        except Exception as e:
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text=f"Memory updated successfully: {memory_id}"
-                )]
-            )
-        else:
-            return CallToolResult(
-                content=[TextContent(
-                    type="text",
-                    text=f"Failed to update memory: {memory_id}"
-                )]
+                    text=f"Failed to update memory: {e}"
+                )],
+                isError=True
             )
     
     async def _handle_delete_memory(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle delete_memory tool call."""
-        memory_id = arguments["memory_id"]
-        
-        success = self.memory_db.delete_memory(memory_id)
-        
-        if success:
+        try:
+            memory_id = arguments["memory_id"]
+
+            success = await self.memory_db.delete_memory(memory_id)
+
+            if success:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"Memory deleted successfully: {memory_id}"
+                    )]
+                )
+            else:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"Failed to delete memory (may not exist): {memory_id}"
+                    )],
+                    isError=True
+                )
+        except KeyError as e:
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text=f"Memory deleted successfully: {memory_id}"
-                )]
+                    text=f"Missing required field: {e}"
+                )],
+                isError=True
             )
-        else:
+        except Exception as e:
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text=f"Failed to delete memory (may not exist): {memory_id}"
-                )]
+                    text=f"Failed to delete memory: {e}"
+                )],
+                isError=True
             )
     
     async def _handle_create_relationship(self, arguments: Dict[str, Any]) -> CallToolResult:
@@ -541,7 +622,7 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
                 context=arguments.get("context")
             )
             
-            relationship_id = self.memory_db.create_relationship(
+            relationship_id = await self.memory_db.create_relationship(
                 from_memory_id=arguments["from_memory_id"],
                 to_memory_id=arguments["to_memory_id"],
                 relationship_type=RelationshipType(arguments["relationship_type"]),
@@ -560,71 +641,98 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
                 content=[TextContent(
                     type="text",
                     text=f"Failed to create relationship: {e}"
-                )]
+                )],
+                isError=True
             )
     
     async def _handle_get_related_memories(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle get_related_memories tool call."""
-        memory_id = arguments["memory_id"]
-        relationship_types = None
-        
-        if "relationship_types" in arguments:
-            relationship_types = [RelationshipType(t) for t in arguments["relationship_types"]]
-        
-        max_depth = arguments.get("max_depth", 2)
-        
-        related_memories = self.memory_db.get_related_memories(
-            memory_id=memory_id,
-            relationship_types=relationship_types,
-            max_depth=max_depth
-        )
-        
-        if not related_memories:
+        try:
+            memory_id = arguments["memory_id"]
+            relationship_types = None
+
+            if "relationship_types" in arguments:
+                relationship_types = [RelationshipType(t) for t in arguments["relationship_types"]]
+
+            max_depth = arguments.get("max_depth", 2)
+
+            related_memories = await self.memory_db.get_related_memories(
+                memory_id=memory_id,
+                relationship_types=relationship_types,
+                max_depth=max_depth
+            )
+
+            if not related_memories:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"No related memories found for: {memory_id}"
+                    )]
+                )
+
+            # Format results
+            results_text = f"Found {len(related_memories)} related memories:\n\n"
+            for i, (memory, relationship) in enumerate(related_memories, 1):
+                results_text += f"**{i}. {memory.title}** (ID: {memory.id})\n"
+                results_text += f"Relationship: {relationship.type.value} (strength: {relationship.properties.strength})\n"
+                results_text += f"Type: {memory.type.value} | Importance: {memory.importance}\n\n"
+
+            return CallToolResult(
+                content=[TextContent(type="text", text=results_text)]
+            )
+        except KeyError as e:
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text=f"No related memories found for: {memory_id}"
-                )]
+                    text=f"Missing required field: {e}"
+                )],
+                isError=True
             )
-        
-        # Format results
-        results_text = f"Found {len(related_memories)} related memories:\n\n"
-        for i, (memory, relationship) in enumerate(related_memories, 1):
-            results_text += f"**{i}. {memory.title}** (ID: {memory.id})\n"
-            results_text += f"Relationship: {relationship.type.value} (strength: {relationship.properties.strength})\n"
-            results_text += f"Type: {memory.type.value} | Importance: {memory.importance}\n\n"
-        
-        return CallToolResult(
-            content=[TextContent(type="text", text=results_text)]
-        )
+        except Exception as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to get related memories: {e}"
+                )],
+                isError=True
+            )
     
     async def _handle_get_memory_statistics(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle get_memory_statistics tool call."""
-        stats = self.memory_db.get_memory_statistics()
-        
-        # Format statistics
-        stats_text = "**Memory Database Statistics**\n\n"
-        
-        if stats.get("total_memories"):
-            stats_text += f"Total Memories: {stats['total_memories']['count']}\n"
-        
-        if stats.get("memories_by_type"):
-            stats_text += "\n**Memories by Type:**\n"
-            for mem_type, count in stats["memories_by_type"].items():
-                stats_text += f"- {mem_type}: {count}\n"
-        
-        if stats.get("total_relationships"):
-            stats_text += f"\nTotal Relationships: {stats['total_relationships']['count']}\n"
-        
-        if stats.get("avg_importance"):
-            stats_text += f"Average Importance: {stats['avg_importance']['avg_importance']:.2f}\n"
-        
-        if stats.get("avg_confidence"):
-            stats_text += f"Average Confidence: {stats['avg_confidence']['avg_confidence']:.2f}\n"
-        
-        return CallToolResult(
-            content=[TextContent(type="text", text=stats_text)]
-        )
+        try:
+            stats = await self.memory_db.get_memory_statistics()
+
+            # Format statistics
+            stats_text = "**Memory Database Statistics**\n\n"
+
+            if stats.get("total_memories"):
+                stats_text += f"Total Memories: {stats['total_memories']['count']}\n"
+
+            if stats.get("memories_by_type"):
+                stats_text += "\n**Memories by Type:**\n"
+                for mem_type, count in stats["memories_by_type"].items():
+                    stats_text += f"- {mem_type}: {count}\n"
+
+            if stats.get("total_relationships"):
+                stats_text += f"\nTotal Relationships: {stats['total_relationships']['count']}\n"
+
+            if stats.get("avg_importance"):
+                stats_text += f"Average Importance: {stats['avg_importance']['avg_importance']:.2f}\n"
+
+            if stats.get("avg_confidence"):
+                stats_text += f"Average Confidence: {stats['avg_confidence']['avg_confidence']:.2f}\n"
+
+            return CallToolResult(
+                content=[TextContent(type="text", text=stats_text)]
+            )
+        except Exception as e:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to get memory statistics: {e}"
+                )],
+                isError=True
+            )
 
 
 async def main():

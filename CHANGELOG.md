@@ -96,11 +96,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Target**: May 2025
 - **Focus**: Production readiness, performance optimization, deep integration
 
-## Contributors
-
-- **Claude Code** - Initial implementation and architecture design
-- **ViralV00d00** - Project management and GitHub setup
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

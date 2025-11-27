@@ -207,16 +207,25 @@ class MemoryNode(BaseModel):
         
         # Add context information if present
         if self.memory.context:
+            import json
             context_data = self.memory.context.dict()
             for key, value in context_data.items():
                 if value is not None:
                     if isinstance(value, datetime):
                         props[f'context_{key}'] = value.isoformat()
-                    elif isinstance(value, (list, dict)):
-                        props[f'context_{key}'] = str(value) if value else None
+                    elif isinstance(value, list):
+                        # Store lists as native Neo4j arrays (only if simple types)
+                        if value and all(isinstance(v, (str, int, float, bool)) for v in value):
+                            props[f'context_{key}'] = value
+                        else:
+                            # Complex nested structures: use JSON serialization
+                            props[f'context_{key}'] = json.dumps(value)
+                    elif isinstance(value, dict):
+                        # Dicts must be serialized as JSON strings for Neo4j compatibility
+                        props[f'context_{key}'] = json.dumps(value)
                     else:
                         props[f'context_{key}'] = value
-        
+
         return props
 
 
@@ -264,14 +273,72 @@ class MemoryGraph(BaseModel):
 
 class AnalysisResult(BaseModel):
     """Result of memory or relationship analysis."""
-    
+
     analysis_type: str
     results: Dict[str, Any]
     confidence: float = Field(ge=0.0, le=1.0)
     metadata: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     class Config:
         json_encoders = {
             datetime: lambda v: v.isoformat()
         }
+
+
+# Custom Exception Hierarchy
+
+class MemoryError(Exception):
+    """Base exception for all memory-related errors."""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        """Initialize memory error.
+
+        Args:
+            message: Human-readable error message
+            details: Optional dictionary with additional error context
+        """
+        self.message = message
+        self.details = details or {}
+        super().__init__(self.message)
+
+    def __str__(self) -> str:
+        """Return string representation of error."""
+        if self.details:
+            return f"{self.message} (Details: {self.details})"
+        return self.message
+
+
+class MemoryNotFoundError(MemoryError):
+    """Raised when a requested memory does not exist."""
+
+    def __init__(self, memory_id: str, details: Optional[Dict[str, Any]] = None):
+        """Initialize memory not found error.
+
+        Args:
+            memory_id: ID of the memory that was not found
+            details: Optional additional context
+        """
+        self.memory_id = memory_id
+        message = f"Memory not found: {memory_id}"
+        super().__init__(message, details)
+
+
+class RelationshipError(MemoryError):
+    """Raised when there's an issue with relationship operations."""
+    pass
+
+
+class ValidationError(MemoryError):
+    """Raised when data validation fails."""
+    pass
+
+
+class DatabaseConnectionError(MemoryError):
+    """Raised when there's a database connection issue."""
+    pass
+
+
+class SchemaError(MemoryError):
+    """Raised when there's a schema-related issue."""
+    pass

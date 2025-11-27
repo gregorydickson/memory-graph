@@ -17,14 +17,26 @@ from .models import (
     RelationshipType,
     MemoryNode,
     MemoryContext,
+    MemoryError,
+    MemoryNotFoundError,
+    RelationshipError,
+    ValidationError,
+    DatabaseConnectionError,
+    SchemaError,
 )
 
 __all__ = [
     "ClaudeMemoryServer",
     "Memory",
-    "MemoryType", 
+    "MemoryType",
     "Relationship",
     "RelationshipType",
     "MemoryNode",
     "MemoryContext",
+    "MemoryError",
+    "MemoryNotFoundError",
+    "RelationshipError",
+    "ValidationError",
+    "DatabaseConnectionError",
+    "SchemaError",
 ]

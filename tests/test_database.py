@@ -356,7 +356,7 @@ class TestMemoryDatabase:
     @pytest.mark.asyncio
     async def test_delete_memory(self, database, connection, sample_memory, mock_driver, mock_session):
         """Test deleting a memory."""
-        mock_session.execute_write = create_mock_execute([{"deleted": 1}])
+        mock_session.execute_write = create_mock_execute([{"deleted_count": 1}])
         mock_driver.session = MagicMock(return_value=mock_session)
 
         success = await database.delete_memory(sample_memory.id)
@@ -367,20 +367,21 @@ class TestMemoryDatabase:
     async def test_create_relationship(self, database, connection, mock_driver, mock_session):
         """Test creating a relationship between memories."""
         rel_id = str(uuid.uuid4())
-        mock_session.execute_write = create_mock_execute([{"rel_id": rel_id}])
+        mock_session.execute_write = create_mock_execute([{"id": rel_id}])
         mock_driver.session = MagicMock(return_value=mock_session)
 
         from_id = str(uuid.uuid4())
         to_id = str(uuid.uuid4())
 
-        relationship = await database.create_relationship(
+        relationship_id = await database.create_relationship(
             from_memory_id=from_id,
             to_memory_id=to_id,
             relationship_type=RelationshipType.SOLVES,
             properties=RelationshipProperties(strength=0.9, confidence=0.8)
         )
 
-        assert relationship is not None
+        assert relationship_id is not None
+        assert relationship_id == rel_id
 
     @pytest.mark.asyncio
     async def test_create_relationship_invalid_type(self, database):
@@ -398,11 +399,8 @@ class TestMemoryDatabase:
     @pytest.mark.asyncio
     async def test_get_related_memories(self, database, connection, mock_driver, mock_session):
         """Test getting related memories with depth traversal."""
-        mock_tx = AsyncMock()
-        mock_result = AsyncMock()
-
         # Mock related memories data
-        mock_result.data = AsyncMock(return_value=[
+        related_data = [
             {
                 "related": {
                     "id": str(uuid.uuid4()),
@@ -416,21 +414,21 @@ class TestMemoryDatabase:
                     "updated_at": datetime.utcnow().isoformat()
                 },
                 "rel_type": "SOLVES",
-                "strength": 0.9
+                "rel_props": {
+                    "strength": 0.9,
+                    "confidence": 0.8,
+                    "evidence_count": 1
+                }
             }
-        ])
-        mock_tx.run = AsyncMock(return_value=mock_result)
-
-        mock_session.execute_read = AsyncMock(
-            side_effect=lambda func, *args: func(mock_tx, *args)
-        )
+        ]
+        mock_session.execute_read = create_mock_execute(related_data)
         mock_driver.session = MagicMock(return_value=mock_session)
 
         memory_id = str(uuid.uuid4())
         related = await database.get_related_memories(
             memory_id=memory_id,
             relationship_types=[RelationshipType.SOLVES],
-            depth=2
+            max_depth=2
         )
 
         assert isinstance(related, list)
@@ -438,24 +436,19 @@ class TestMemoryDatabase:
     @pytest.mark.asyncio
     async def test_get_related_memories_depth_limit(self, database, connection, mock_driver, mock_session):
         """Test relationship traversal respects depth limit."""
-        mock_tx = AsyncMock()
-        mock_result = AsyncMock()
-        mock_result.data = AsyncMock(return_value=[])
-        mock_tx.run = AsyncMock(return_value=mock_result)
-
-        mock_session.execute_read = AsyncMock(
-            side_effect=lambda func, *args: func(mock_tx, *args)
-        )
+        # Mock empty results (no related memories)
+        mock_session.execute_read = create_mock_execute([])
         mock_driver.session = MagicMock(return_value=mock_session)
 
         memory_id = str(uuid.uuid4())
         related = await database.get_related_memories(
             memory_id=memory_id,
             relationship_types=[],
-            depth=1
+            max_depth=1
         )
 
         assert isinstance(related, list)
+        assert len(related) == 0
 
     @pytest.mark.asyncio
     async def test_get_memory_statistics(self, database, connection, mock_driver, mock_session):
@@ -523,11 +516,9 @@ class TestErrorHandling:
         """Test that failed transactions rollback correctly."""
         from neo4j.exceptions import Neo4jError
 
-        mock_tx = AsyncMock()
-        mock_tx.run = AsyncMock(side_effect=Neo4jError("Transaction failed"))
-
+        # Mock session.execute_write to raise Neo4jError
         mock_session.execute_write = AsyncMock(
-            side_effect=lambda func, *args: func(mock_tx, *args)
+            side_effect=Neo4jError("Transaction failed")
         )
         mock_driver.session = MagicMock(return_value=mock_session)
 
