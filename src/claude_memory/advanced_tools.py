@@ -360,14 +360,60 @@ class AdvancedRelationshipHandlers:
     async def handle_reinforce_relationship(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Reinforce a relationship."""
         try:
-            # Note: This would require additional database methods to:
-            # 1. Find the relationship between these memories
-            # 2. Update its properties based on reinforcement
+            from_id = arguments["from_memory_id"]
+            to_id = arguments["to_memory_id"]
+            success = arguments.get("success", True)
+
+            # Get the existing relationship to find its type and current properties
+            related = await self.memory_db.get_related_memories(from_id, max_depth=1)
+
+            # Find the relationship to the target memory
+            target_rel = None
+            for memory, rel in related:
+                if memory.id == to_id:
+                    target_rel = rel
+                    break
+
+            if not target_rel:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text=f"No relationship found between {from_id} and {to_id}"
+                    )],
+                    isError=True
+                )
+
+            # Reinforce the relationship properties
+            new_props = relationship_manager.reinforce_relationship_properties(
+                target_rel.properties,
+                success=success
+            )
+
+            # Update the relationship in the database
+            await self.memory_db.update_relationship_properties(
+                from_id,
+                to_id,
+                target_rel.type,
+                new_props
+            )
+
+            result = {
+                "from_memory_id": from_id,
+                "to_memory_id": to_id,
+                "relationship_type": target_rel.type.value,
+                "success": success,
+                "updated_properties": {
+                    "strength": new_props.strength,
+                    "confidence": new_props.confidence,
+                    "evidence_count": new_props.evidence_count,
+                    "success_rate": new_props.success_rate
+                }
+            }
 
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text="Relationship reinforcement requires database extension. Feature planned for future release."
+                    text=json.dumps(result, indent=2)
                 )]
             )
 

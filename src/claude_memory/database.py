@@ -673,7 +673,77 @@ class MemoryDatabase:
         except Exception as e:
             logger.error(f"Failed to convert Neo4j node to Memory: {e}")
             return None
-    
+
+    async def update_relationship_properties(
+        self,
+        from_memory_id: str,
+        to_memory_id: str,
+        relationship_type: RelationshipType,
+        properties: RelationshipProperties
+    ) -> bool:
+        """Update properties of an existing relationship.
+
+        Args:
+            from_memory_id: Source memory ID
+            to_memory_id: Target memory ID
+            relationship_type: Type of relationship to update
+            properties: Updated relationship properties
+
+        Returns:
+            bool: True if update successful, False otherwise
+
+        Raises:
+            DatabaseConnectionError: If query fails
+            RelationshipError: If relationship not found
+        """
+        try:
+            # Convert properties to dict
+            props_dict = properties.model_dump()
+
+            # Convert datetime fields to ISO format strings
+            for key in ['created_at', 'last_validated']:
+                if key in props_dict and props_dict[key]:
+                    props_dict[key] = props_dict[key].isoformat()
+
+            # Update the relationship properties
+            query = """
+            MATCH (from:Memory {id: $from_id})-[r:$rel_type]->(to:Memory {id: $to_id})
+            SET r += $props
+            RETURN r
+            """
+
+            # Neo4j doesn't support parameterized relationship types, so construct query dynamically
+            query = f"""
+            MATCH (from:Memory {{id: $from_id}})-[r:{relationship_type.value}]->(to:Memory {{id: $to_id}})
+            SET r += $props
+            RETURN r
+            """
+
+            result = await self.connection.execute_write_query(
+                query,
+                {
+                    "from_id": from_memory_id,
+                    "to_id": to_memory_id,
+                    "props": props_dict
+                }
+            )
+
+            if not result:
+                raise RelationshipError(
+                    f"Relationship not found: {from_memory_id} -{relationship_type.value}-> {to_memory_id}"
+                )
+
+            logger.info(
+                f"Updated relationship {from_memory_id} -{relationship_type.value}-> {to_memory_id}"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to update relationship: {e}")
+            if isinstance(e, RelationshipError):
+                raise
+            raise DatabaseConnectionError(f"Failed to update relationship: {str(e)}")
+
     async def get_memory_statistics(self) -> Dict[str, Any]:
         """Get database statistics and metrics.
 
