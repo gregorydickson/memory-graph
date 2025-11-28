@@ -8,12 +8,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Entity extraction integration into store_memory workflow
 - Advanced memory analytics and visualization
-- Claude Code workflow integration
 - Memory effectiveness tracking
 - Performance optimization
 - Embedding-based semantic similarity (optional enhancement)
+- Proactive context suggestions (Phase 7)
+
+## [0.5.0] - 2025-11-28
+
+### Added - Phase 6: Claude Code Integration
+- **Context Capture Module**: Automatic development context tracking
+  - Task context capture (description, goals, files involved)
+  - Command execution tracking (command, output, error, success)
+  - Error pattern analysis with frequency tracking
+  - Solution effectiveness tracking
+  - Privacy-first: automatic sanitization of API keys, passwords, tokens, emails
+  - 99% test coverage
+
+- **Project Analysis Module**: Project-aware memory intelligence
+  - Project detection from config files (8 language types supported)
+  - Codebase analysis (file counts, languages, frameworks)
+  - Git integration for file change tracking
+  - Code pattern identification (API endpoints, classes, async patterns)
+  - Framework detection (React, Vue, FastAPI, Django, etc.)
+  - 88% test coverage
+
+- **Workflow Tracking Module**: Development workflow optimization
+  - Workflow action tracking with session management
+  - Workflow suggestions based on successful patterns
+  - Optimization recommendations (slow actions, repeated failures)
+  - Session state management for continuity
+  - Next-step suggestions based on context
+  - 96% test coverage
+
+- **11 New MCP Tools for Integration**:
+  - `capture_task`: Capture task context
+  - `capture_command`: Capture command execution
+  - `track_error_solution`: Track solution effectiveness
+  - `detect_project`: Detect project information
+  - `analyze_project`: Analyze codebase structure
+  - `track_file_changes`: Track git changes
+  - `identify_patterns`: Identify code patterns
+  - `track_workflow`: Track workflow actions
+  - `suggest_workflow`: Get workflow suggestions
+  - `optimize_workflow`: Get optimization recommendations
+  - `get_session_state`: Get current session state
+
+- **75 New Integration Tests**: Comprehensive test suite
+  - 27 context capture tests
+  - 18 project analysis tests
+  - 30 workflow tracking tests
+  - All tests passing (100% pass rate)
+  - Total test count: 346 (271 + 75 new)
+
+- **Security Features**:
+  - Automatic redaction of sensitive data patterns
+  - Safe subprocess handling with timeouts
+  - Graceful handling of missing git repositories
+  - No credential leaking into memories
+
+### Enhanced
+- Memory type system: Added task, observation, file_change, error_pattern, workflow_action, code_pattern
+- Entity types: Added session, file, project entities
+- Relationship usage: Leverages existing types (PART_OF, INVOLVES, EXECUTED_IN, EXHIBITS, SOLVES, IN_SESSION, FOLLOWS)
+
+### Documentation
+- ADR 007: Claude Code Integration Architecture
+- Updated enhancement plan with Phase 6 completion
+- Integration module documentation
+- Security sanitization patterns documented
 
 ## [0.4.0] - 2025-11-28
 
