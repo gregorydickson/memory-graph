@@ -7,13 +7,15 @@ a high-level interface for interacting with the Neo4j graph database.
 
 import os
 import logging
-from typing import Dict, List, Optional, Any, Union, Tuple
+from typing import Dict, List, Optional, Any, Union, Tuple, TYPE_CHECKING
 from contextlib import asynccontextmanager
 import uuid
 from datetime import datetime
 
-from neo4j import AsyncGraphDatabase, AsyncDriver, AsyncSession
-from neo4j.exceptions import ServiceUnavailable, AuthError, Neo4jError
+# Lazy imports for neo4j - only imported when Neo4jConnection is instantiated
+# This allows the package to work with SQLite backend without neo4j installed
+if TYPE_CHECKING:
+    from neo4j import AsyncDriver
 
 from .models import (
     Memory, MemoryType, MemoryNode, Relationship, RelationshipType,
@@ -64,6 +66,16 @@ class Neo4jConnection:
         Raises:
             DatabaseConnectionError: If connection fails
         """
+        # Lazy import neo4j only when connecting
+        try:
+            from neo4j import AsyncGraphDatabase
+            from neo4j.exceptions import ServiceUnavailable, AuthError
+        except ImportError as e:
+            raise DatabaseConnectionError(
+                "neo4j package is required for Neo4j backend. "
+                "Install with: pip install neo4j"
+            ) from e
+
         try:
             self.driver = AsyncGraphDatabase.driver(
                 self.uri,
@@ -129,6 +141,13 @@ class Neo4jConnection:
         Raises:
             DatabaseConnectionError: If query execution fails
         """
+        # Lazy import Neo4jError for exception handling
+        try:
+            from neo4j.exceptions import Neo4jError
+        except ImportError:
+            # If neo4j not installed, we shouldn't be here anyway
+            Neo4jError = Exception
+
         try:
             async with self.session(database) as session:
                 result = await session.execute_write(
@@ -158,6 +177,13 @@ class Neo4jConnection:
         Raises:
             DatabaseConnectionError: If query execution fails
         """
+        # Lazy import Neo4jError for exception handling
+        try:
+            from neo4j.exceptions import Neo4jError
+        except ImportError:
+            # If neo4j not installed, we shouldn't be here anyway
+            Neo4jError = Exception
+
         try:
             async with self.session(database) as session:
                 result = await session.execute_read(
@@ -187,9 +213,15 @@ class Neo4jConnection:
 
 class MemoryDatabase:
     """High-level interface for memory database operations."""
-    
-    def __init__(self, connection: Neo4jConnection):
-        """Initialize with a Neo4j connection."""
+
+    def __init__(self, connection):
+        """
+        Initialize with a database backend connection.
+
+        Args:
+            connection: Database backend connection (Neo4jConnection or GraphBackend).
+                       Must provide execute_write_query and execute_read_query methods.
+        """
         self.connection = connection
     
     async def initialize_schema(self) -> None:
@@ -222,7 +254,7 @@ class MemoryDatabase:
             try:
                 await self.connection.execute_write_query(constraint)
                 logger.debug(f"Created constraint: {constraint}")
-            except Neo4jError as e:
+            except Exception as e:
                 if "already exists" not in str(e).lower():
                     logger.warning(f"Failed to create constraint: {e}")
 
@@ -230,7 +262,7 @@ class MemoryDatabase:
             try:
                 await self.connection.execute_write_query(index)
                 logger.debug(f"Created index: {index}")
-            except Neo4jError as e:
+            except Exception as e:
                 if "already exists" not in str(e).lower():
                     logger.warning(f"Failed to create index: {e}")
 

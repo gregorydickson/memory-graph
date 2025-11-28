@@ -145,7 +145,7 @@ async def predict_needs(
             logger.error(f"Error querying memories for entity {entity.text}: {e}")
 
     # Find patterns that match the context
-    pattern_keywords = [e.text.lower() for e in entities if e.entity_type.value in ["technology", "concept"]]
+    pattern_keywords = [(e.text.lower(), e.confidence) for e in entities if e.entity_type.value in ["technology", "concept"]]
 
     if pattern_keywords:
         pattern_query = """
@@ -159,17 +159,23 @@ async def predict_needs(
         """
 
         try:
+            # Get average confidence of matching entities
+            avg_confidence = sum(conf for _, conf in pattern_keywords) / len(pattern_keywords)
+            keywords_only = [kw for kw, _ in pattern_keywords]
+
             results = await backend.execute_query(
                 pattern_query,
-                {"keywords": pattern_keywords}
+                {"keywords": keywords_only}
             )
 
             for record in results:
-                # Calculate relevance for patterns
+                # Calculate relevance for patterns based on entity confidence
                 effectiveness = record.get("effectiveness", 0.5)
                 usage_count = record.get("usage_count", 0)
 
-                relevance = 0.6 + (effectiveness * 0.3) + min(usage_count / 10.0, 0.1)
+                # Use entity confidence as base, similar to entity-based suggestions
+                relevance = avg_confidence + (effectiveness * 0.3) + min(usage_count / 10.0, 0.1)
+                relevance = min(relevance, 1.0)  # Cap at 1.0
 
                 if relevance >= min_relevance:
                     suggestions.append(Suggestion(
@@ -401,4 +407,4 @@ async def suggest_related_context(
         logger.error(f"Error finding related context: {e}")
 
     logger.info(f"Found {len(suggestions)} related suggestions")
-    return suggestions
+    return suggestions[:max_suggestions]

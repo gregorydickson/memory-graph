@@ -125,7 +125,9 @@ class TestNeo4jConnection:
     @pytest.mark.asyncio
     async def test_connect_success(self, connection, mock_driver):
         """Test successful connection to Neo4j."""
-        with patch('claude_memory.database.AsyncGraphDatabase.driver', return_value=mock_driver):
+        # Patch neo4j module and AsyncGraphDatabase at import time inside connect()
+        with patch('neo4j.AsyncGraphDatabase') as mock_graph_db:
+            mock_graph_db.driver.return_value = mock_driver
             connection.driver = None
             await connection.connect()
 
@@ -139,10 +141,11 @@ class TestNeo4jConnection:
 
         conn = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", password="password")
 
-        with patch('claude_memory.database.AsyncGraphDatabase.driver') as mock_driver_factory:
+        # Patch neo4j module at import time inside connect()
+        with patch('neo4j.AsyncGraphDatabase') as mock_graph_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock(side_effect=ServiceUnavailable("Service unavailable"))
-            mock_driver_factory.return_value = mock_driver
+            mock_graph_db.driver.return_value = mock_driver
 
             with pytest.raises(DatabaseConnectionError) as exc_info:
                 await conn.connect()
@@ -156,10 +159,11 @@ class TestNeo4jConnection:
 
         conn = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", password="wrong")
 
-        with patch('claude_memory.database.AsyncGraphDatabase.driver') as mock_driver_factory:
+        # Patch neo4j module at import time inside connect()
+        with patch('neo4j.AsyncGraphDatabase') as mock_graph_db:
             mock_driver = AsyncMock()
             mock_driver.verify_connectivity = AsyncMock(side_effect=AuthError("Auth failed"))
-            mock_driver_factory.return_value = mock_driver
+            mock_graph_db.driver.return_value = mock_driver
 
             with pytest.raises(DatabaseConnectionError) as exc_info:
                 await conn.connect()
