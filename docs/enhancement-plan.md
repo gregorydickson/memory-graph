@@ -1174,7 +1174,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
 #### 8.1 Docker Deployment (Priority: CRITICAL)
 **Goal**: One-command deployment with all dependencies.
 
-- [x] Create `docker/Dockerfile` for memory server:
+- [ ] Create `docker/Dockerfile` for memory server:
   ```dockerfile
   FROM python:3.11-slim
   WORKDIR /app
@@ -1183,7 +1183,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   COPY src/ ./src/
   CMD ["claude-memory", "--backend", "auto"]
   ```
-- [x] Create `docker/docker-compose.yml` (Neo4j):
+- [ ] Create `docker/docker-compose.yml` (Neo4j):
   ```yaml
   version: '3.8'
   services:
@@ -1211,7 +1211,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   volumes:
     neo4j_data:
   ```
-- [x] Create `docker/docker-compose.memgraph.yml` (Memgraph):
+- [ ] Create `docker/docker-compose.memgraph.yml` (Memgraph):
   ```yaml
   version: '3.8'
   services:
@@ -1236,7 +1236,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   volumes:
     memgraph_data:
   ```
-- [x] Create `docker/docker-compose.sqlite.yml` (SQLite-only, no external DB):
+- [ ] Create `docker/docker-compose.sqlite.yml` (SQLite-only, no external DB):
   ```yaml
   version: '3.8'
   services:
@@ -1253,19 +1253,19 @@ This phase focuses on deployment, developer experience, documentation, and produ
   volumes:
     sqlite_data:
   ```
-- [x] Create `scripts/start.sh` smart launcher:
+- [ ] Create `scripts/start.sh` smart launcher:
   - Detect available backends
   - Choose best docker-compose file
   - Handle first-time setup
   - Provide helpful output
-- [x] Add health check endpoints to all services
-- [x] Test on macOS, Linux, Windows (WSL)
-- [x] Document in `docs/DEPLOYMENT.md`
+- [ ] Add health check endpoints to all services
+- [ ] Test on macOS, Linux, Windows (WSL)
+- [ ] Document in `docs/DEPLOYMENT.md`
 
 #### 8.2 Package Installation (Priority: HIGH)
 **Goal**: Easy installation via pip with CLI.
 
-- [x] Configure `pyproject.toml` for PyPI publishing:
+- [ ] Configure `pyproject.toml` for PyPI publishing:
   ```toml
   [project]
   name = "claude-code-memory"
@@ -1287,7 +1287,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   [project.scripts]
   claude-memory = "claude_memory.cli:main"
   ```
-- [x] Implement CLI in `src/claude_memory/cli.py`:
+- [ ] Implement CLI in `src/claude_memory/cli.py`:
   ```python
   import click
 
@@ -1301,12 +1301,12 @@ This phase focuses on deployment, developer experience, documentation, and produ
       # Configure and start server
       pass
   ```
-- [x] Test installation flow:
+- [ ] Test installation flow:
   ```bash
   pip install claude-code-memory
   claude-memory --backend sqlite
   ```
-- [x] Add installation modes:
+- [ ] Add installation modes:
   ```bash
   # Minimal (SQLite only)
   pip install claude-code-memory
@@ -1317,20 +1317,20 @@ This phase focuses on deployment, developer experience, documentation, and produ
   # Development
   pip install claude-code-memory[dev]
   ```
-- [x] Publish to PyPI
-- [x] Create GitHub releases with binaries
+- [ ] Publish to PyPI
+- [ ] Create GitHub releases with binaries
 
 #### 8.3 Claude Code Integration Guide (Priority: HIGH)
 **Goal**: Seamless MCP configuration for Claude Code.
 
-- [x] Create `docs/CLAUDE_CODE_SETUP.md` with step-by-step guides
-- [x] Document configuration for SQLite mode:
+- [ ] Create `docs/CLAUDE_CODE_SETUP.md` with step-by-step guides
+- [ ] Document configuration for SQLite mode:
   ```bash
   # Install and configure
   pip install claude-code-memory
   claude mcp add memory-graph pip run claude-memory --backend sqlite
   ```
-- [x] Document configuration for Docker (Neo4j):
+- [ ] Document configuration for Docker (Neo4j):
   ```bash
   # Start with docker-compose
   docker-compose -f docker-compose.yml up -d
@@ -1338,7 +1338,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
   # Add to Claude Code
   claude mcp add memory-graph http://localhost:8000
   ```
-- [x] Document configuration for Docker (Memgraph):
+- [ ] Document configuration for Docker (Memgraph):
   ```bash
   # Start with docker-compose
   docker-compose -f docker-compose.memgraph.yml up -d
@@ -1346,16 +1346,16 @@ This phase focuses on deployment, developer experience, documentation, and produ
   # Add to Claude Code
   claude mcp add memory-graph http://localhost:8000
   ```
-- [x] Create example `.claude/mcp.json` configurations
-- [x] Create troubleshooting guide
-- [x] Test with Claude Code in all modes
-- [x] Record setup video tutorial
+- [ ] Create example `.claude/mcp.json` configurations
+- [ ] Create troubleshooting guide
+- [ ] Test with Claude Code in all modes
+- [ ] Record setup video tutorial
 
 #### 8.4 Visualization Dashboard (Priority: LOW)
 **Goal**: Web UI to explore the knowledge graph.
 
-- [x] Create `src/claude_memory/web/__init__.py`
-- [x] Implement FastAPI web server:
+- [ ] Create `src/claude_memory/web/__init__.py`
+- [ ] Implement FastAPI web server:
   ```python
   from fastapi import FastAPI
   from fastapi.staticfiles import StaticFiles
@@ -1363,51 +1363,51 @@ This phase focuses on deployment, developer experience, documentation, and produ
   app = FastAPI()
   app.mount("/static", StaticFiles(directory="static"), name="static")
   ```
-- [x] Create API endpoints:
+- [ ] Create API endpoints:
   - `GET /api/graph` - D3-compatible graph data
   - `GET /api/graph/{node_id}` - Subgraph around node
   - `GET /api/memories` - Paginated memory list
   - `GET /api/memories/{id}` - Memory detail
   - `GET /api/stats` - Dashboard metrics
   - `GET /api/search?q={query}` - Search endpoint
-- [x] Create static HTML/JS for visualization:
+- [ ] Create static HTML/JS for visualization:
   - Use vis.js or D3.js for graph rendering
   - Interactive graph exploration
   - Memory detail panels
   - Search interface
   - Statistics dashboard
-- [x] Add to Docker compose files
-- [x] Document at `docs/VISUALIZATION.md`
+- [ ] Add to Docker compose files
+- [ ] Document at `docs/VISUALIZATION.md`
 
 #### 8.5 Performance Optimization (Priority: HIGH)
 **Goal**: Production-ready performance.
 
-- [x] Optimize Cypher queries:
+- [ ] Optimize Cypher queries:
   - Add query plans analysis
   - Add missing indexes
   - Optimize relationship traversals
   - Cache frequent queries
-- [x] Implement connection pooling:
+- [ ] Implement connection pooling:
   - Configure optimal pool size
   - Add connection health checks
   - Handle connection failures gracefully
-- [x] Add caching layer:
+- [ ] Add caching layer:
   - Cache frequent memory retrievals
   - Cache graph statistics
   - Implement cache invalidation
-- [x] Optimize background jobs:
+- [ ] Optimize background jobs:
   - Run pattern extraction off-peak
   - Batch relationship decay updates
   - Throttle intensive operations
-- [x] Add performance monitoring:
+- [ ] Add performance monitoring:
   - Log query execution times
   - Track memory usage
   - Monitor cache hit rates
-- [x] Create performance benchmarks:
+- [ ] Create performance benchmarks:
   - Memory operations throughput
   - Graph traversal performance
   - Concurrent request handling
-- [x] Test with realistic data volumes:
+- [ ] Test with realistic data volumes:
   - 10,000+ memories
   - 50,000+ relationships
   - Concurrent users
@@ -1415,8 +1415,8 @@ This phase focuses on deployment, developer experience, documentation, and produ
 #### 8.6 Quality Assurance (Priority: CRITICAL)
 **Goal**: Production-quality codebase.
 
-- [x] Achieve 80%+ test coverage across all modules
-- [x] Set up GitHub Actions CI/CD pipeline:
+- [ ] Achieve 80%+ test coverage across all modules
+- [ ] Set up GitHub Actions CI/CD pipeline:
   ```yaml
   name: CI
   on: [push, pull_request]
@@ -1450,7 +1450,7 @@ This phase focuses on deployment, developer experience, documentation, and produ
         - name: Build Docker images
           run: docker-compose build
   ```
-- [x] Add pre-commit hooks:
+- [ ] Add pre-commit hooks:
   ```yaml
   # .pre-commit-config.yaml
   repos:
@@ -1463,16 +1463,16 @@ This phase focuses on deployment, developer experience, documentation, and produ
       hooks:
         - id: ruff
   ```
-- [x] Security audit:
+- [ ] Security audit:
   - Run `pip-audit` for dependency vulnerabilities
   - Check for SQL injection risks (none - using parameterized queries)
   - Validate input sanitization
   - Review authentication mechanisms
-- [x] Performance benchmarks vs competitors:
+- [ ] Performance benchmarks vs competitors:
   - Compare to mem0 (vector-based)
   - Measure graph query advantages
   - Document performance characteristics
-- [x] Load testing:
+- [ ] Load testing:
   - Simulate concurrent users
   - Test under memory pressure
   - Validate graceful degradation
