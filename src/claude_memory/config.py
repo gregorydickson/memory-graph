@@ -7,7 +7,7 @@ for the multi-backend memory server.
 
 import os
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 
 class BackendType(Enum):
@@ -16,6 +16,43 @@ class BackendType(Enum):
     MEMGRAPH = "memgraph"
     SQLITE = "sqlite"
     AUTO = "auto"
+
+
+# Tool profile definitions
+TOOL_PROFILES = {
+    "lite": [
+        # Core memory operations (5 tools)
+        "store_memory",
+        "get_memory",
+        "search_memories",
+        "update_memory",
+        "delete_memory",
+        # Core relationship operations (3 tools)
+        "create_relationship",
+        "get_related_memories",
+        "get_memory_statistics",
+    ],
+    "standard": [
+        # Lite tools (8)
+        "store_memory",
+        "get_memory",
+        "search_memories",
+        "update_memory",
+        "delete_memory",
+        "create_relationship",
+        "get_related_memories",
+        "get_memory_statistics",
+        # Intelligence tools (7 additional)
+        "find_similar_solutions",
+        "suggest_patterns_for_context",
+        "get_intelligent_context",
+        "get_project_summary",
+        "get_session_briefing",
+        "get_memory_history",
+        "track_entity_timeline",
+    ],
+    "full": None,  # None means all tools enabled
+}
 
 
 class Config:
@@ -97,6 +134,17 @@ class Config:
     def is_memgraph_configured(cls) -> bool:
         """Check if Memgraph backend is configured."""
         return bool(cls.MEMGRAPH_URI)
+
+    @classmethod
+    def get_enabled_tools(cls) -> Optional[List[str]]:
+        """
+        Get the list of enabled tools based on the configured profile.
+
+        Returns:
+            List of tool names to enable, or None for all tools (full profile)
+        """
+        profile = cls.TOOL_PROFILE.lower()
+        return TOOL_PROFILES.get(profile, TOOL_PROFILES["lite"])
 
     @classmethod
     def get_config_summary(cls) -> dict:

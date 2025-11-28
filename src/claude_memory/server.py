@@ -40,6 +40,10 @@ from .models import (
     DatabaseConnectionError,
 )
 from .advanced_tools import ADVANCED_RELATIONSHIP_TOOLS, AdvancedRelationshipHandlers
+from .intelligence_tools import INTELLIGENCE_TOOLS
+from .integration_tools import INTEGRATION_TOOLS
+from .proactive_tools import PROACTIVE_TOOLS
+from .config import Config
 
 
 # Configure logging
@@ -63,8 +67,24 @@ class ClaudeMemoryServer:
         # Register MCP handlers
         self._register_handlers()
 
-        # Define available tools (basic + advanced)
-        self.tools = [
+        # Collect all tools from all modules
+        all_tools = self._collect_all_tools()
+
+        # Filter tools based on profile
+        enabled_tool_names = Config.get_enabled_tools()
+        if enabled_tool_names is None:
+            # Full profile: all tools enabled
+            self.tools = all_tools
+            logger.info(f"Tool profile: FULL - All {len(all_tools)} tools enabled")
+        else:
+            # Filter tools by name
+            self.tools = [tool for tool in all_tools if tool.name in enabled_tool_names]
+            logger.info(f"Tool profile: {Config.TOOL_PROFILE.upper()} - {len(self.tools)}/{len(all_tools)} tools enabled")
+
+    def _collect_all_tools(self) -> List[Tool]:
+        """Collect all tool definitions from all modules."""
+        # Basic tools (defined inline below)
+        basic_tools = [
             Tool(
                 name="store_memory",
                 description="Store a new memory with context and metadata",
@@ -282,8 +302,19 @@ class ClaudeMemoryServer:
                     "properties": {}
                 }
             )
-        ] + ADVANCED_RELATIONSHIP_TOOLS
-    
+        ]
+
+        # Combine all tools from all modules
+        all_tools = (
+            basic_tools +
+            ADVANCED_RELATIONSHIP_TOOLS +
+            INTELLIGENCE_TOOLS +
+            INTEGRATION_TOOLS +
+            PROACTIVE_TOOLS
+        )
+
+        return all_tools
+
     def _register_handlers(self):
         """Register MCP protocol handlers."""
         
@@ -322,20 +353,61 @@ class ClaudeMemoryServer:
                 elif request.name == "get_memory_statistics":
                     return await self._handle_get_memory_statistics(request.arguments)
                 # Advanced relationship tools
-                elif request.name == "find_memory_path":
-                    return await self.advanced_handlers.handle_find_memory_path(request.arguments)
-                elif request.name == "analyze_memory_clusters":
-                    return await self.advanced_handlers.handle_analyze_memory_clusters(request.arguments)
-                elif request.name == "find_bridge_memories":
-                    return await self.advanced_handlers.handle_find_bridge_memories(request.arguments)
-                elif request.name == "suggest_relationship_type":
-                    return await self.advanced_handlers.handle_suggest_relationship_type(request.arguments)
-                elif request.name == "reinforce_relationship":
-                    return await self.advanced_handlers.handle_reinforce_relationship(request.arguments)
-                elif request.name == "get_relationship_types_by_category":
-                    return await self.advanced_handlers.handle_get_relationship_types_by_category(request.arguments)
-                elif request.name == "analyze_graph_metrics":
-                    return await self.advanced_handlers.handle_analyze_graph_metrics(request.arguments)
+                elif request.name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
+                                       "suggest_relationship_type", "reinforce_relationship",
+                                       "get_relationship_types_by_category", "analyze_graph_metrics"]:
+                    # Dispatch to advanced handlers
+                    method_name = f"handle_{request.name}"
+                    handler = getattr(self.advanced_handlers, method_name, None)
+                    if handler:
+                        return await handler(request.arguments)
+                    else:
+                        return CallToolResult(
+                            content=[TextContent(type="text", text=f"Handler not found: {request.name}")],
+                            isError=True
+                        )
+
+                # Intelligence tools
+                elif request.name in ["find_similar_solutions", "suggest_patterns_for_context",
+                                      "get_intelligent_context", "get_project_summary",
+                                      "get_session_briefing", "get_memory_history", "track_entity_timeline"]:
+                    from .intelligence_tools import INTELLIGENCE_HANDLERS
+                    handler = INTELLIGENCE_HANDLERS.get(request.name)
+                    if handler:
+                        return await handler(self.memory_db, request.arguments)
+                    else:
+                        return CallToolResult(
+                            content=[TextContent(type="text", text=f"Intelligence handler not found: {request.name}")],
+                            isError=True
+                        )
+
+                # Integration tools
+                elif request.name in ["capture_task", "capture_command", "track_error_solution",
+                                      "detect_project", "analyze_project", "track_file_changes",
+                                      "identify_patterns", "track_workflow", "suggest_workflow",
+                                      "optimize_workflow", "get_session_state"]:
+                    if hasattr(self, 'integration_handlers'):
+                        return await self.integration_handlers.dispatch(request.name, request.arguments)
+                    else:
+                        return CallToolResult(
+                            content=[TextContent(type="text", text="Integration handlers not initialized")],
+                            isError=True
+                        )
+
+                # Proactive tools
+                elif request.name in ["check_for_issues", "get_suggestions", "predict_solution_effectiveness",
+                                      "suggest_related_memories", "record_outcome", "get_graph_visualization",
+                                      "recommend_learning_paths", "identify_knowledge_gaps", "track_memory_roi"]:
+                    from .proactive_tools import PROACTIVE_TOOL_HANDLERS
+                    handler = PROACTIVE_TOOL_HANDLERS.get(request.name)
+                    if handler:
+                        return await handler(self.memory_db, request.arguments)
+                    else:
+                        return CallToolResult(
+                            content=[TextContent(type="text", text=f"Proactive handler not found: {request.name}")],
+                            isError=True
+                        )
+
                 else:
                     return CallToolResult(
                         content=[TextContent(
@@ -358,9 +430,9 @@ class ClaudeMemoryServer:
     async def initialize(self):
         """Initialize the server and establish database connection."""
         try:
-            # Initialize Neo4j connection
-            self.db_connection = Neo4jConnection()
-            await self.db_connection.connect()
+            # Initialize backend connection using factory
+            from .backends.factory import BackendFactory
+            self.db_connection = await BackendFactory.create_backend()
 
             # Initialize memory database
             self.memory_db = MemoryDatabase(self.db_connection)
@@ -369,7 +441,14 @@ class ClaudeMemoryServer:
             # Initialize advanced relationship handlers
             self.advanced_handlers = AdvancedRelationshipHandlers(self.memory_db)
 
-            logger.info("Claude Memory Server initialized successfully with advanced relationship features")
+            # Initialize integration handlers if needed
+            from .integration_tools import IntegrationToolHandlers
+            self.integration_handlers = IntegrationToolHandlers(self.memory_db)
+
+            backend_name = getattr(self.db_connection, 'backend_name', 'Unknown')
+            logger.info(f"Claude Memory Server initialized successfully")
+            logger.info(f"Backend: {backend_name}")
+            logger.info(f"Tool profile: {Config.TOOL_PROFILE.upper()} ({len(self.tools)} tools enabled)")
 
         except Exception as e:
             logger.error(f"Failed to initialize server: {e}")
