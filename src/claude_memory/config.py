@@ -23,7 +23,7 @@ class Config:
     Configuration class for the memory server.
 
     Environment Variables:
-        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|auto) [default: auto]
+        MEMORY_BACKEND: Backend type (neo4j|memgraph|sqlite|auto) [default: sqlite]
 
         Neo4j Configuration:
             MEMORY_NEO4J_URI or NEO4J_URI: Connection URI [default: bolt://localhost:7687]
@@ -38,12 +38,15 @@ class Config:
         SQLite Configuration:
             MEMORY_SQLITE_PATH: Database file path [default: ~/.claude-memory/memory.db]
 
+        Tool Profile Configuration:
+            MEMORY_TOOL_PROFILE: Tool profile (lite|standard|full) [default: lite]
+
         Logging Configuration:
             MEMORY_LOG_LEVEL: Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
     """
 
     # Backend Selection
-    BACKEND: str = os.getenv("MEMORY_BACKEND", "auto")
+    BACKEND: str = os.getenv("MEMORY_BACKEND", "sqlite")
 
     # Neo4j Configuration
     NEO4J_URI: str = os.getenv("MEMORY_NEO4J_URI") or os.getenv("NEO4J_URI", "bolt://localhost:7687")
@@ -58,6 +61,9 @@ class Config:
 
     # SQLite Configuration
     SQLITE_PATH: str = os.getenv("MEMORY_SQLITE_PATH", os.path.expanduser("~/.claude-memory/memory.db"))
+
+    # Tool Profile Configuration
+    TOOL_PROFILE: str = os.getenv("MEMORY_TOOL_PROFILE", "lite")
 
     # Logging Configuration
     LOG_LEVEL: str = os.getenv("MEMORY_LOG_LEVEL", "INFO")

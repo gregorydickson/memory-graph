@@ -4,51 +4,71 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-code-memory"
-version = "0.1.0"
-description = "A Neo4j-based MCP memory server for Claude Code with intelligent relationship tracking"
+version = "1.0.0"
+description = "Graph-based MCP memory server for Claude Code with intelligent relationship tracking and multi-backend support"
 authors = [
-    {name = "Claude Code", email = "claude@anthropic.com"}
+    {name = "Gregory Dickson", email = "gregory@example.com"}
 ]
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
-keywords = ["mcp", "memory", "neo4j", "claude", "ai", "knowledge-graph"]
+keywords = ["mcp", "memory", "neo4j", "memgraph", "sqlite", "claude", "ai", "knowledge-graph", "graph-database"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Database :: Database Engines/Servers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 dependencies = [
     "mcp>=1.0.0",
-    "neo4j>=5.0.0",
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
-    "asyncio>=3.11.0",
     "typing-extensions>=4.0.0",
+    "networkx>=3.0.0",
 ]
 
 [project.optional-dependencies]
+neo4j = [
+    "neo4j>=5.0.0",
+]
+memgraph = [
+    "neo4j>=5.0.0",
+]
+intelligence = [
+    "sentence-transformers>=2.0.0",
+    "spacy>=3.0.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
 ]
+all = [
+    "neo4j>=5.0.0",
+    "sentence-transformers>=2.0.0",
+    "spacy>=3.0.0",
+]
 
 [project.urls]
-Homepage = "https://github.com/viralvoodoo/claude-code-memory"
-Repository = "https://github.com/viralvoodoo/claude-code-memory"
-Issues = "https://github.com/viralvoodoo/claude-code-memory/issues"
+Homepage = "https://github.com/gregorydickson/claude-code-memory"
+Repository = "https://github.com/gregorydickson/claude-code-memory"
+Issues = "https://github.com/gregorydickson/claude-code-memory/issues"
+Documentation = "https://github.com/gregorydickson/claude-code-memory/blob/main/docs/"
 
 [project.scripts]
-claude-memory = "claude_memory.server:main"
+claude-memory = "claude_memory.cli:main"
 
 [tool.hatch.build.targets.sdist]
 include = [

@@ -22,11 +22,12 @@ class BackendFactory:
     """
     Factory class for creating and selecting graph database backends.
 
+    Default: SQLite (zero-config)
+
     Selection priority:
     1. If MEMORY_BACKEND env var is set, use that specific backend
-    2. Try Neo4j connection (if NEO4J_PASSWORD or MEMORY_NEO4J_PASSWORD is set)
-    3. Try Memgraph connection (if available at default URI)
-    4. Fall back to SQLite + NetworkX
+    2. Default to SQLite for frictionless installation
+    3. "auto" mode tries: Neo4j → Memgraph → SQLite
     """
 
     @staticmethod
@@ -41,10 +42,11 @@ class BackendFactory:
             DatabaseConnectionError: If no backend can be connected
 
         Selection logic:
-        - Explicit: Use MEMORY_BACKEND env var if set
+        - Default: SQLite (zero-config, no external dependencies)
+        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, sqlite, auto)
         - Auto: Try backends in order until one connects successfully
         """
-        backend_type = os.getenv("MEMORY_BACKEND", "auto").lower()
+        backend_type = os.getenv("MEMORY_BACKEND", "sqlite").lower()
 
         if backend_type == "neo4j":
             logger.info("Explicit backend selection: Neo4j")
