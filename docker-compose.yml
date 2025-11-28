@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  claude-memory:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claude-memory-sqlite
+    stdin_open: true  # Required for MCP stdio
+    tty: true         # Required for MCP stdio
+    environment:
+      - MEMORY_BACKEND=sqlite
+      - MEMORY_TOOL_PROFILE=lite
+      - MEMORY_SQLITE_PATH=/data/memory.db
+      - MEMORY_LOG_LEVEL=INFO
+    volumes:
+      - memory_data:/data
+    restart: unless-stopped
+
+volumes:
+  memory_data:
+    driver: local
