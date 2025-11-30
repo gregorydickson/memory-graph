@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch, call
 from contextlib import asynccontextmanager
 
 from memorygraph.server import ClaudeMemoryServer, main
+from memorygraph import __version__
 from mcp.server import Server, NotificationOptions
 from mcp.server.models import InitializationOptions
 from mcp.types import ServerCapabilities
@@ -325,7 +326,7 @@ class TestInitializationOptionsParameters:
                         # Verify the InitializationOptions
                         call_args = mock_run.call_args
                         init_options = call_args[0][2]
-                        assert init_options.server_version == "0.1.0"
+                        assert init_options.server_version == __version__
 
     @pytest.mark.asyncio
     async def test_initialization_options_capabilities_object(self):
