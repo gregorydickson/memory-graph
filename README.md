@@ -23,17 +23,63 @@ A graph-based Model Context Protocol (MCP) server that gives **AI coding agents*
 pip install memorygraphMCP
 
 # 2. Add to Claude Code CLI
-claude mcp add --transport stdio memorygraph memorygraph
+claude mcp add --transport stdio memorygraph -- memorygraph
 
 # 3. Restart Claude Code CLI
+# Exit your current Claude Code session (Ctrl+C or type 'exit')
+# Then start a new session by running 'claude' again
 ```
 
-**That's it!** Memory is now available. Try asking Claude: *"Store this pattern for later: use bcrypt for password hashing"*
+**Verify Installation:**
+```bash
+# Check that memorygraph command is available
+which memorygraph
+
+# Verify version
+memorygraph --version
+
+# Check MCP server status
+claude mcp list
+# You should see "memorygraph" with ✓ Connected
+```
+
+**If you see "command not found"**, the memorygraph command may not be in your PATH. Find it with:
+```bash
+python3 -c "import memorygraph; print(memorygraph.__file__)"
+# Or check pip installation location
+python3 -m pip show memorygraphMCP | grep Location
+```
+
+Then either:
+- Add the Python bin directory to your PATH, or
+- Use the full path when configuring: `claude mcp add --transport stdio memorygraph -- /full/path/to/memorygraph`
+
+**That's it!** Memory is now available.
+
+### First Steps with MemoryGraph
+
+Try storing your first memory:
+
+In Claude Code:
+```
+Store this for later: Use pytest for testing Python projects
+```
+
+Verify it was stored:
+```
+Search for memories about testing
+```
+
+Check your memory database:
+```bash
+ls -la ~/.memorygraph/
+# You should see memory.db
+```
 
 **Default Configuration**:
 - Mode: Lite (8 core tools), SQLite backend
 - Storage: `~/.memorygraph/memory.db`
-- Scope: User-level (available across all projects)
+- Scope: Local to current project (use `--scope user` for all projects)
 
 > **Note**: These instructions are for **Claude Code CLI** (command-line interface). For other Claude Code interfaces (VS Code extension, Desktop app, Web), see [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for interface-specific instructions.
 
@@ -42,16 +88,17 @@ claude mcp add --transport stdio memorygraph memorygraph
 
 ```bash
 # Pattern recognition (15 tools)
-claude mcp add --transport stdio memorygraph memorygraph --profile standard
+claude mcp add --transport stdio memorygraph -- memorygraph --profile standard
 
 # All features (44 tools) with Neo4j
-claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+claude mcp add --transport stdio memorygraph \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
-  --env MEMORY_NEO4J_PASSWORD=your-password
+  --env MEMORY_NEO4J_PASSWORD=your-password \
+  -- memorygraph --profile full --backend neo4j
 
 # Project-specific (creates .mcp.json in project root)
-claude mcp add --transport stdio memorygraph memorygraph --scope project
+claude mcp add --transport stdio memorygraph --scope project -- memorygraph
 ```
 
 **Configuration File Guide**:
@@ -493,7 +540,7 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
         "memorygraph-server",
         "python",
         "-m",
-        "claude_memory.server"
+        "memorygraph.server"
       ],
       "env": {
         "MEMORY_BACKEND": "neo4j",
@@ -699,7 +746,7 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete configuration reference.
 ### Project Structure
 ```
 memorygraph/
-├── src/claude_memory/          # Main source code
+├── src/memorygraph/            # Main source code
 │   ├── server.py               # MCP server (44 tools)
 │   ├── backends/               # SQLite, Neo4j, Memgraph
 │   ├── tools/                  # Tool implementations
@@ -721,7 +768,7 @@ cd memorygraph
 pip install -e ".[dev]"
 
 # Run tests
-pytest tests/ -v --cov=claude_memory
+pytest tests/ -v --cov=memorygraph
 
 # Type checking
 mypy src/
@@ -738,7 +785,7 @@ ruff --fix src/ tests/
 pytest
 
 # With coverage
-pytest --cov=claude_memory --cov-report=html
+pytest --cov=memorygraph --cov-report=html
 
 # Specific backend
 pytest tests/backends/test_sqlite_backend.py
@@ -772,6 +819,25 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed migration guide.
 ## Troubleshooting
 
 ### Common Issues
+
+**Command not found: memorygraph**
+```bash
+# Find where memorygraph was installed
+python3 -m pip show memorygraphMCP | grep Location
+
+# Check if it's in PATH
+which memorygraph
+
+# If not found, add Python bin directory to PATH
+# For bash users, add to ~/.bashrc:
+export PATH="$PATH:/path/to/python/bin"
+
+# For zsh users, add to ~/.zshrc:
+export PATH="$PATH:/path/to/python/bin"
+
+# Or use full path in MCP configuration
+claude mcp add --transport stdio memorygraph -- /full/path/to/memorygraph
+```
 
 **Server won't start**
 ```bash
