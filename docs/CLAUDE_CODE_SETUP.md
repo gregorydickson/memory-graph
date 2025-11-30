@@ -114,22 +114,140 @@ See the uvx MCP configuration example in the [MCP Configuration](#uvx-configurat
 
 ## MCP Configuration
 
-### Step 1: Locate MCP Config File
+### Official Method: Use `claude mcp add` Command
 
-Claude Code's MCP configuration is at:
+According to the [official Claude Code documentation](https://code.claude.com/docs/en/mcp), the **recommended and official way** to configure MCP servers is using the `claude mcp add` command. Manual JSON editing is not the intended workflow.
+
+### Understanding Claude Code's Configuration Files
+
+Claude Code uses multiple configuration files with different purposes. **This is admittedly messy**, and Anthropic is aware of the documentation issues.
+
+| File | Purpose | What Goes Here |
+|------|---------|----------------|
+| **`.mcp.json`** | Project MCP servers | Server configurations for specific project (created by `claude mcp add --scope project`) |
+| **`~/.claude.json`** | Global MCP servers (legacy) | User-level server configurations (managed by `claude mcp add`) |
+| **`~/.claude/settings.json`** | Permissions & behavior | `enabledMcpjsonServers`, environment variables, tool behavior settings |
+
+### Key Takeaways
+
+✅ **DO**:
+- Use `claude mcp add` command (official method)
+- Let the CLI manage configuration files for you
+- Use `--scope project` for project-specific servers
+- Use default (user-level) for servers available across all projects
+
+❌ **DON'T**:
+- Put MCP servers in `~/.claude/settings.json` - **it won't work**
+- Manually edit `.mcp.json` or `~/.claude.json` unless absolutely necessary
+- Try to manually manage the "chaotic grab bag" of legacy global settings
+
+**Why this matters**: The configuration system is complex and has legacy files. Using `claude mcp add` ensures your MCP servers are configured in the correct location and format.
+
+**Prerequisites**: You must have already installed MemoryGraph via pip (see [Installation](#installation) section above). The `claude mcp add` command configures Claude Code to use the already-installed `memorygraph` command.
+
+---
+
+### Configuration Examples
+
+#### User-Level Configuration (Default)
+
+Servers available across all projects:
+
 ```bash
-~/.claude/mcp.json
+# Prerequisite: pip install memorygraphMCP (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph
 ```
 
-If it doesn't exist, create it:
+This uses:
+- SQLite backend (zero config)
+- Lite profile (8 core tools)
+- Default database path: `~/.memorygraph/memory.db`
+
+#### Project-Level Configuration
+
+Creates `.mcp.json` in your project root:
+
 ```bash
-mkdir -p ~/.claude
-touch ~/.claude/mcp.json
+# Prerequisite: pip install memorygraphMCP (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --scope project
 ```
 
-### Step 2: Add Memory Server
+#### Standard Configuration (Pattern Recognition)
 
-Edit `~/.claude/mcp.json` and add the memory server configuration.
+```bash
+# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile standard
+```
+
+This adds:
+- Pattern recognition
+- Intelligence features
+- 15 tools total
+
+#### Full Configuration (SQLite)
+
+```bash
+# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile full
+```
+
+This enables:
+- All 44 tools
+- Graph analytics
+- Advanced features
+
+#### Full Configuration (Neo4j)
+
+```bash
+# Prerequisite: pip install "memorygraphMCP[neo4j,intelligence]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+  --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
+  --env MEMORY_NEO4J_USER=neo4j \
+  --env MEMORY_NEO4J_PASSWORD=your-password
+```
+
+This enables:
+- All 44 tools
+- Neo4j backend
+- Graph analytics
+- Advanced features
+
+#### Custom Database Path
+
+```bash
+# Prerequisite: pip install memorygraphMCP (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile standard \
+  --env MEMORY_SQLITE_PATH=/path/to/your/project/.memory/memory.db \
+  --env MEMORY_LOG_LEVEL=DEBUG
+```
+
+#### Verify Installation
+
+```bash
+# List all MCP servers
+claude mcp list
+
+# Get details for memorygraph
+claude mcp get memorygraph
+```
+
+---
+
+### Manual Configuration (Not Recommended)
+
+**Note**: Manual JSON editing is **not the recommended approach** according to [official Claude Code documentation](https://code.claude.com/docs/en/mcp). Use `claude mcp add` instead. This section is provided for reference and for use with other MCP clients.
+
+If you must manually edit config files:
+
+#### Manual Configuration Reference
+
+**⚠️ Warning**: This section is provided for reference only. The configuration system has legacy files and known complexity issues.
+
+**For Claude Code users**: Just use `claude mcp add` and avoid this entirely.
+
+**For other MCP clients**: You'll need to manually configure based on your client's documentation.
+
+**Common Mistake**: Don't put MCP server definitions in `~/.claude/settings.json` - they go in `.mcp.json` (project) or `~/.claude.json` (global).
 
 #### Minimal Configuration (Recommended to Start)
 
@@ -189,6 +307,8 @@ This enables:
 - Graph analytics
 - Advanced features
 
+---
+
 #### uvx Configuration (Advanced - Not Recommended)
 
 **⚠️ Warning**: This configuration is **not recommended** for production MCP servers. Use `pip install memorygraphMCP` instead.
@@ -235,7 +355,7 @@ If you insist on using uvx (for testing purposes only):
 
 **Recommendation**: For daily use, install via pip and use the standard configurations above.
 
-### Step 3: Save and Restart
+#### Step 3: Save and Restart
 
 1. Save `mcp.json`
 2. Restart Claude Code

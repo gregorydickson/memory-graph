@@ -190,9 +190,107 @@ RUN pip install memorygraphMCP
 
 ## Configuration
 
-### Quick Start Configuration
+### Official Method: Use `claude mcp add` Command
 
-**Minimal (Default)**
+According to the [official Claude Code documentation](https://code.claude.com/docs/en/mcp), the **recommended and official way** to configure MCP servers is using the `claude mcp add` command. Manual JSON editing is not the intended workflow.
+
+### Understanding Claude Code's Configuration Files
+
+Claude Code uses multiple configuration files with different purposes. **This is admittedly messy**, and Anthropic is aware of the documentation issues.
+
+| File | Purpose | What Goes Here |
+|------|---------|----------------|
+| **`.mcp.json`** | Project MCP servers | Server configurations for specific project (created by `claude mcp add --scope project`) |
+| **`~/.claude.json`** | Global MCP servers (legacy) | User-level server configurations (managed by `claude mcp add`) |
+| **`~/.claude/settings.json`** | Permissions & behavior | `enabledMcpjsonServers`, environment variables, tool behavior settings |
+
+### Key Takeaways
+
+✅ **DO**:
+- Use `claude mcp add` command (official method)
+- Let the CLI manage configuration files for you
+- Use `--scope project` for project-specific servers
+- Use default (user-level) for servers available across all projects
+
+❌ **DON'T**:
+- Put MCP servers in `~/.claude/settings.json` - **it won't work**
+- Manually edit `.mcp.json` or `~/.claude.json` unless absolutely necessary
+- Try to manually manage the "chaotic grab bag" of legacy global settings
+
+**Why this matters**: The configuration system is complex and has legacy files. Using `claude mcp add` ensures your MCP servers are configured in the correct location and format.
+
+**Prerequisites**: You must have already installed MemoryGraph via pip (see [Installation Methods](#installation-methods) above). The `claude mcp add` command configures Claude Code to use the already-installed `memorygraph` command.
+
+---
+
+### Claude Code CLI Configuration Examples
+
+#### User-Level Configuration (Default)
+
+```bash
+# Prerequisite: pip install memorygraphMCP (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph
+```
+
+Uses:
+- SQLite backend
+- Lite profile (8 tools)
+- Default database path: `~/.memorygraph/memory.db`
+- Available across all projects
+
+#### Project-Level Configuration
+
+```bash
+# Prerequisite: pip install memorygraphMCP (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --scope project
+```
+
+Creates `.mcp.json` in your project root.
+
+#### Standard Configuration
+
+```bash
+# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile standard
+```
+
+#### Full Configuration (SQLite)
+
+```bash
+# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile full
+```
+
+#### Full Configuration (Neo4j)
+
+```bash
+# Prerequisite: pip install "memorygraphMCP[neo4j,intelligence]" (must be run first)
+claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+  --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
+  --env MEMORY_NEO4J_USER=neo4j \
+  --env MEMORY_NEO4J_PASSWORD=your-password
+```
+
+#### Verify Configuration
+
+```bash
+# List all MCP servers
+claude mcp list
+
+# Get details for memorygraph
+claude mcp get memorygraph
+```
+
+---
+
+### Manual Configuration (Not Recommended for Claude Code)
+
+**Note**: Manual JSON editing is **not the recommended approach** for Claude Code users according to [official documentation](https://code.claude.com/docs/en/mcp). Use `claude mcp add` instead. This section is for reference and for other MCP clients.
+
+If you need to manually configure (for non-Claude Code clients):
+
+#### Quick Start Configuration (Minimal)
+
 ```json
 {
   "mcpServers": {
@@ -208,7 +306,7 @@ Uses:
 - Lite profile (8 tools)
 - Default database path: `~/.memorygraph/memory.db`
 
-### Standard Configuration
+#### Standard Configuration
 
 ```json
 {
@@ -221,7 +319,7 @@ Uses:
 }
 ```
 
-### Full Configuration
+#### Full Configuration
 
 ```json
 {
@@ -885,12 +983,18 @@ memorygraph --version
 ### Personal Use (Local)
 
 **Recommendation**: SQLite, lite profile
+
+**Step 1: Install**
 ```bash
 pip install memorygraphMCP
-memorygraph
 ```
 
-**MCP Config**:
+**Step 2: Configure MCP** (Claude Code CLI):
+```bash
+claude mcp add --transport stdio memorygraph memorygraph
+```
+
+**Step 2: Configure MCP** (Manual):
 ```json
 {
   "mcpServers": {
@@ -904,18 +1008,29 @@ memorygraph
 ### Team Use (Shared Server)
 
 **Recommendation**: Neo4j, full profile
+
+**Step 1: Server setup**
 ```bash
-# Server setup
 docker run -d --name neo4j \
   -p 7474:7474 -p 7687:7687 \
   -e NEO4J_AUTH=neo4j/strong-password \
   neo4j:5-community
-
-# Each team member
-pip install "memorygraph[neo4j]"
 ```
 
-**MCP Config** (team members):
+**Step 2: Each team member installs**
+```bash
+pip install "memorygraphMCP[neo4j,intelligence]"
+```
+
+**Step 3: Configure MCP** (Claude Code CLI - team members):
+```bash
+claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+  --env MEMORY_NEO4J_URI=bolt://team-server:7687 \
+  --env MEMORY_NEO4J_USER=neo4j \
+  --env MEMORY_NEO4J_PASSWORD=strong-password
+```
+
+**Step 3: Configure MCP** (Manual - team members):
 ```json
 {
   "mcpServers": {
@@ -936,17 +1051,25 @@ pip install "memorygraph[neo4j]"
 
 **Recommendation**: Neo4j Aura, full profile
 
-**1. Create Neo4j Aura instance**:
+**Step 1: Create Neo4j Aura instance**:
 - Go to https://neo4j.com/cloud/aura/
 - Create free instance
 - Save connection details
 
-**2. Install locally**:
+**Step 2: Install locally**:
 ```bash
-pip install "memorygraph[neo4j]"
+pip install "memorygraphMCP[neo4j,intelligence]"
 ```
 
-**3. MCP Config**:
+**Step 3: Configure MCP** (Claude Code CLI):
+```bash
+claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+  --env MEMORY_NEO4J_URI=neo4j+s://your-instance.neo4j.io \
+  --env MEMORY_NEO4J_USER=neo4j \
+  --env MEMORY_NEO4J_PASSWORD=your-password
+```
+
+**Step 3: Configure MCP** (Manual):
 ```json
 {
   "mcpServers": {

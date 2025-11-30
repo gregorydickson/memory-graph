@@ -12,18 +12,76 @@ A graph-based Model Context Protocol (MCP) server that gives **AI coding agents*
 
 ---
 
-## Quick Start (30 seconds)
+## Quick Start
 
-### Step 1: Install
+### For Claude Code (30 seconds)
+
+**Super simple - just 3 commands:**
 
 ```bash
+# 1. Install the package
 pip install memorygraphMCP
+
+# 2. Add to Claude Code
+claude mcp add --transport stdio memorygraph memorygraph
+
+# 3. Restart Claude Code
 ```
 
-### Step 2: Add to Your MCP Client
+**That's it!** Memory is now available. Try asking Claude: *"Store this pattern for later: use bcrypt for password hashing"*
 
-**For Claude Code**, edit `.claude/mcp.json` (or `~/.config/claude/mcp_settings.json`):
+**Default Configuration**:
+- Mode: Lite (8 core tools), SQLite backend
+- Storage: `~/.memorygraph/memory.db`
+- Scope: User-level (available across all projects)
 
+<details>
+<summary><b>Want more features? Click to expand</b></summary>
+
+```bash
+# Pattern recognition (15 tools)
+claude mcp add --transport stdio memorygraph memorygraph --profile standard
+
+# All features (44 tools) with Neo4j
+claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
+  --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
+  --env MEMORY_NEO4J_USER=neo4j \
+  --env MEMORY_NEO4J_PASSWORD=your-password
+
+# Project-specific (creates .mcp.json in project root)
+claude mcp add --transport stdio memorygraph memorygraph --scope project
+```
+
+**Configuration File Guide**:
+
+| File | Purpose | What Goes Here |
+|------|---------|----------------|
+| `.mcp.json` | Project MCP servers | Created by `claude mcp add --scope project` |
+| `~/.claude.json` | Global MCP servers (legacy) | Managed by `claude mcp add` |
+| `settings.json` | Permissions & behavior | `enabledMcpjsonServers`, env vars |
+
+**Key Takeaways**:
+- ✅ Use `claude mcp add` (official method)
+- ✅ Let the CLI manage config files
+- ❌ Don't manually edit config files
+- ❌ Don't put MCP servers in `settings.json` - won't work
+
+</details>
+
+See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for advanced configuration.
+
+---
+
+### For Other MCP Clients (Cursor, Continue, etc.)
+
+```bash
+# 1. Install the package
+pip install memorygraphMCP
+
+# 2. Add to your client's MCP configuration
+```
+
+**Example configuration** (location varies by client):
 ```json
 {
   "mcpServers": {
@@ -34,11 +92,9 @@ pip install memorygraphMCP
 }
 ```
 
-**For other MCP clients** (Cursor, Continue, etc.), follow their MCP server configuration docs.
+**3. Restart your coding agent**
 
-### Step 3: Restart Your Coding Agent
-
-That's it! Memory is stored in `~/.memorygraph/memory.db`. Zero additional configuration needed.
+Follow your MCP client's documentation for exact configuration steps.
 
 ### Start Using It
 
