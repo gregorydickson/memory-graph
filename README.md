@@ -14,7 +14,7 @@ A graph-based Model Context Protocol (MCP) server that gives **AI coding agents*
 
 ## Quick Start
 
-### For Claude Code (30 seconds)
+### For Claude Code CLI (30 seconds)
 
 **Super simple - just 3 commands:**
 
@@ -22,10 +22,10 @@ A graph-based Model Context Protocol (MCP) server that gives **AI coding agents*
 # 1. Install the package
 pip install memorygraphMCP
 
-# 2. Add to Claude Code
+# 2. Add to Claude Code CLI
 claude mcp add --transport stdio memorygraph memorygraph
 
-# 3. Restart Claude Code
+# 3. Restart Claude Code CLI
 ```
 
 **That's it!** Memory is now available. Try asking Claude: *"Store this pattern for later: use bcrypt for password hashing"*
@@ -34,6 +34,8 @@ claude mcp add --transport stdio memorygraph memorygraph
 - Mode: Lite (8 core tools), SQLite backend
 - Storage: `~/.memorygraph/memory.db`
 - Scope: User-level (available across all projects)
+
+> **Note**: These instructions are for **Claude Code CLI** (command-line interface). For other Claude Code interfaces (VS Code extension, Desktop app, Web), see [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for interface-specific instructions.
 
 <details>
 <summary><b>Want more features? Click to expand</b></summary>
@@ -68,7 +70,7 @@ claude mcp add --transport stdio memorygraph memorygraph --scope project
 
 </details>
 
-See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for advanced configuration.
+See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for advanced configuration and other Claude Code interfaces.
 
 ---
 

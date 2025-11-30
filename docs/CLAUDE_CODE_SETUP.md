@@ -4,18 +4,36 @@ Step-by-step guide to integrate MemoryGraph with Claude Code.
 
 ## Table of Contents
 
-1. [Quick Start](#quick-start)
-2. [Installation](#installation)
-3. [MCP Configuration](#mcp-configuration)
-4. [Verifying Connection](#verifying-connection)
-5. [First Memory](#first-memory)
-6. [Upgrading to Full Mode](#upgrading-to-full-mode)
-7. [Troubleshooting](#troubleshooting)
-8. [Usage Tips](#usage-tips)
+1. [Understanding Claude Code Interfaces](#understanding-claude-code-interfaces)
+2. [Quick Start](#quick-start)
+3. [Installation](#installation)
+4. [MCP Configuration](#mcp-configuration)
+5. [Verifying Connection](#verifying-connection)
+6. [First Memory](#first-memory)
+7. [Upgrading to Full Mode](#upgrading-to-full-mode)
+8. [Troubleshooting](#troubleshooting)
+9. [Usage Tips](#usage-tips)
+
+---
+
+## Understanding Claude Code Interfaces
+
+Claude Code is available in multiple interfaces. **MCP server support and configuration methods vary by interface**:
+
+| Interface | MCP Support | Configuration Method |
+|-----------|-------------|----------------------|
+| **Claude Code CLI** | ✅ Full support | `claude mcp add` command (recommended) |
+| **VS Code Extension** | ✅ Full support | Manual JSON config in VS Code settings |
+| **Desktop App** | ✅ Full support | Manual JSON config in app settings |
+| **Web (Beta)** | ⚠️ Limited/TBD | May not support custom MCP servers yet |
+
+**This guide primarily covers Claude Code CLI** (using `claude mcp add` command). For other interfaces, see the [Manual Configuration](#manual-configuration-not-recommended) section.
 
 ---
 
 ## Quick Start
+
+### For Claude Code CLI
 
 Get up and running in 3 steps:
 
@@ -23,11 +41,15 @@ Get up and running in 3 steps:
 # 1. Install
 pip install memorygraphMCP
 
-# 2. Add to Claude Code config
-# Edit ~/.claude/mcp.json (see below)
+# 2. Add to Claude Code CLI
+claude mcp add --transport stdio memorygraph memorygraph
 
-# 3. Restart Claude Code
+# 3. Restart Claude Code CLI
 ```
+
+### For Other Claude Code Interfaces
+
+See [MCP Configuration](#mcp-configuration) section below for interface-specific instructions.
 
 ---
 
@@ -114,9 +136,9 @@ See the uvx MCP configuration example in the [MCP Configuration](#uvx-configurat
 
 ## MCP Configuration
 
-### Official Method: Use `claude mcp add` Command
+### For Claude Code CLI: Use `claude mcp add` Command
 
-According to the [official Claude Code documentation](https://code.claude.com/docs/en/mcp), the **recommended and official way** to configure MCP servers is using the `claude mcp add` command. Manual JSON editing is not the intended workflow.
+According to the [official Claude Code documentation](https://code.claude.com/docs/en/mcp), the **recommended and official way** to configure MCP servers for **Claude Code CLI** is using the `claude mcp add` command. Manual JSON editing is not the intended workflow for CLI users.
 
 ### Understanding Claude Code's Configuration Files
 
@@ -233,11 +255,31 @@ claude mcp get memorygraph
 
 ---
 
-### Manual Configuration (Not Recommended)
+### Manual Configuration
 
-**Note**: Manual JSON editing is **not the recommended approach** according to [official Claude Code documentation](https://code.claude.com/docs/en/mcp). Use `claude mcp add` instead. This section is provided for reference and for use with other MCP clients.
+**For Claude Code CLI users**: Use `claude mcp add` instead (see above).
 
-If you must manually edit config files:
+**For other Claude Code interfaces** (VS Code extension, Desktop app): Manual configuration is required as the `claude mcp add` command is CLI-specific.
+
+#### Configuration by Interface
+
+**VS Code Extension**:
+- MCP servers are configured via VS Code settings
+- Location: `.vscode/settings.json` or User Settings
+- See [VS Code MCP documentation](https://marketplace.visualstudio.com/items?itemName=Anthropic.claude-code) for details
+
+**Desktop App**:
+- MCP servers are configured via app settings/preferences
+- Configuration UI available in app settings
+- May also support JSON config file (check app documentation)
+
+**Web (Beta)**:
+- MCP server support may be limited or unavailable
+- Check [Claude Code documentation](https://code.claude.com/docs) for current status
+
+#### Manual JSON Configuration Reference
+
+If you need to manually configure (non-CLI interfaces or other MCP clients):
 
 #### Manual Configuration Reference
 

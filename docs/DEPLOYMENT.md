@@ -190,9 +190,11 @@ RUN pip install memorygraphMCP
 
 ## Configuration
 
-### Official Method: Use `claude mcp add` Command
+### For Claude Code CLI: Use `claude mcp add` Command
 
-According to the [official Claude Code documentation](https://code.claude.com/docs/en/mcp), the **recommended and official way** to configure MCP servers is using the `claude mcp add` command. Manual JSON editing is not the intended workflow.
+According to the [official Claude Code documentation](https://code.claude.com/docs/en/mcp), the **recommended and official way** to configure MCP servers for **Claude Code CLI** is using the `claude mcp add` command. Manual JSON editing is not the intended workflow for CLI users.
+
+**Note**: These instructions are specific to **Claude Code CLI**. For other Claude Code interfaces (VS Code extension, Desktop app, Web), see [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md) for interface-specific instructions.
 
 ### Understanding Claude Code's Configuration Files
 
@@ -224,6 +226,8 @@ Claude Code uses multiple configuration files with different purposes. **This is
 ---
 
 ### Claude Code CLI Configuration Examples
+
+**These examples use `claude mcp add` which is CLI-specific.** For VS Code extension, Desktop app, or Web, see [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md).
 
 #### User-Level Configuration (Default)
 
@@ -283,9 +287,13 @@ claude mcp get memorygraph
 
 ---
 
-### Manual Configuration (Not Recommended for Claude Code)
+### Manual Configuration
 
-**Note**: Manual JSON editing is **not the recommended approach** for Claude Code users according to [official documentation](https://code.claude.com/docs/en/mcp). Use `claude mcp add` instead. This section is for reference and for other MCP clients.
+**For Claude Code CLI users**: Use `claude mcp add` instead (see above).
+
+**For other Claude Code interfaces** (VS Code extension, Desktop app): Manual configuration is required as the `claude mcp add` command is CLI-specific. See [CLAUDE_CODE_SETUP.md](CLAUDE_CODE_SETUP.md#configuration-by-interface) for interface-specific instructions.
+
+**For other MCP clients** (Cursor, Continue, etc.): Use the manual JSON configuration below.
 
 If you need to manually configure (for non-Claude Code clients):
 
