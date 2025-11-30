@@ -28,7 +28,7 @@ classifiers = [
 
 dependencies = [
     "mcp>=1.0.0",
-    "pydantic>=2.0.0",
+    "pydantic>=2.10.0",
     "python-dotenv>=1.0.0",
     "typing-extensions>=4.0.0",
     "networkx>=3.0.0",
@@ -36,28 +36,28 @@ dependencies = [
 
 [project.optional-dependencies]
 neo4j = [
-    "neo4j>=5.0.0",
+    "neo4j>=6.0.0",
 ]
 memgraph = [
-    "neo4j>=5.0.0",
+    "neo4j>=6.0.0",
 ]
 intelligence = [
-    "sentence-transformers>=2.0.0",
+    "sentence-transformers>=5.0.0",
     "spacy>=3.0.0",
 ]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.0.0",
     "pytest-mock>=3.10.0",
-    "black>=23.0.0",
+    "black>=24.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
-    "pre-commit>=3.0.0",
+    "pre-commit>=4.0.0",
 ]
 all = [
-    "neo4j>=5.0.0",
-    "sentence-transformers>=2.0.0",
+    "neo4j>=6.0.0",
+    "sentence-transformers>=5.0.0",
     "spacy>=3.0.0",
 ]
 
