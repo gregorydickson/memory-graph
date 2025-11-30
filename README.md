@@ -19,16 +19,21 @@ A graph-based Model Context Protocol (MCP) server that gives **AI coding agents*
 **Super simple - just 3 commands:**
 
 ```bash
-# 1. Install the package
-pip install memorygraphMCP
+# 1. Install with pipx (recommended - handles PATH automatically)
+#   note: a ~/.local/bin will need to be in the PATH, it's where pipx installs the executable
+pipx install memorygraphMCP
 
-# 2. Add to Claude Code CLI
-claude mcp add --transport stdio memorygraph -- memorygraph
+# 2. Add to Claude Code CLI (globally for all projects)
+claude mcp add --scope user --transport stdio memorygraph -- memorygraph
 
 # 3. Restart Claude Code CLI
-# Exit your current Claude Code session (Ctrl+C or type 'exit')
+# Exit any Claude Code sessions (Ctrl+C or type 'exit')
 # Then start a new session by running 'claude' again
 ```
+
+> **Alternative**: If Python bin is already in your PATH: `pip install --user memorygraphMCP`
+>
+> **Don't have pipx?** Install it first: https://pipx.pypa.io/stable/installation/
 
 **Verify Installation:**
 ```bash
@@ -43,16 +48,12 @@ claude mcp list
 # You should see "memorygraph" with ✓ Connected
 ```
 
-**If you see "command not found"**, the memorygraph command may not be in your PATH. Find it with:
-```bash
-python3 -c "import memorygraph; print(memorygraph.__file__)"
-# Or check pip installation location
-python3 -m pip show memorygraphMCP | grep Location
-```
-
-Then either:
-- Add the Python bin directory to your PATH, or
-- Use the full path when configuring: `claude mcp add --transport stdio memorygraph -- /full/path/to/memorygraph`
+**If you see "command not found"**:
+- **If you used pipx**: Run `pipx ensurepath` and restart your terminal
+- **If you used pip**: Your Python bin directory may not be in PATH. Either:
+  - Reinstall with pipx (recommended): `pipx install memorygraphMCP`
+  - Or add Python bin to PATH manually
+  - Or use the full path: `claude mcp add --transport stdio memorygraph -- /full/path/to/memorygraph`
 
 **That's it!** Memory is now available.
 
@@ -79,7 +80,7 @@ ls -la ~/.memorygraph/
 **Default Configuration**:
 - Mode: Lite (8 core tools), SQLite backend
 - Storage: `~/.memorygraph/memory.db`
-- Scope: Local to current project (use `--scope user` for all projects)
+- Scope: User (global - available in all projects)
 
 > **Note**: These instructions are for **Claude Code CLI** (command-line interface). For other Claude Code interfaces (VS Code extension, Desktop app, Web), see [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for interface-specific instructions.
 
@@ -88,17 +89,17 @@ ls -la ~/.memorygraph/
 
 ```bash
 # Pattern recognition (15 tools)
-claude mcp add --transport stdio memorygraph -- memorygraph --profile standard
+claude mcp add --scope user --transport stdio memorygraph -- memorygraph --profile standard
 
 # All features (44 tools) with Neo4j
-claude mcp add --transport stdio memorygraph \
+claude mcp add --scope user --transport stdio memorygraph \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
   --env MEMORY_NEO4J_PASSWORD=your-password \
   -- memorygraph --profile full --backend neo4j
 
-# Project-specific (creates .mcp.json in project root)
-claude mcp add --transport stdio memorygraph --scope project -- memorygraph
+# Project-specific only (creates .mcp.json in project root)
+claude mcp add --scope project --transport stdio memorygraph -- memorygraph
 ```
 
 **Configuration File Guide**:
@@ -124,11 +125,15 @@ See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for advanced configuration
 ### For Other MCP Clients (Cursor, Continue, etc.)
 
 ```bash
-# 1. Install the package
-pip install memorygraphMCP
+# 1. Install with pipx (recommended - handles PATH automatically)
+pipx install memorygraphMCP
 
 # 2. Add to your client's MCP configuration
 ```
+
+> **Alternative**: If Python bin is already in your PATH: `pip install --user memorygraphMCP`
+>
+> **Don't have pipx?** Install it first: `pip install --user pipx && pipx ensurepath` (one-time setup)
 
 **Example configuration** (location varies by client):
 ```json
@@ -386,20 +391,47 @@ See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list.
 
 ## Installation
 
-### Option 1: pip (Recommended)
+### Option 1: pipx (Recommended)
+
+**Best for most users** - Handles PATH automatically and prevents dependency conflicts:
+
+```bash
+# Install pipx if you don't have it (one-time setup)
+pip install --user pipx
+pipx ensurepath
+
+# Install memorygraph
+pipx install memorygraphMCP
+
+# With intelligence features (standard mode)
+pipx install "memorygraphMCP[intelligence]"
+
+# Full power with Neo4j
+pipx install "memorygraphMCP[neo4j,intelligence]"
+```
+
+**Why pipx?**
+- ✅ Automatic PATH configuration
+- ✅ Isolated environment (no dependency conflicts)
+- ✅ Standard for Python CLI tools
+- ✅ Easy upgrades and uninstalls
+
+### Option 2: pip (If Python bin already in your PATH)
 
 ```bash
 # Basic installation (SQLite, lite mode)
-pip install memorygraphMCP
+pip install --user memorygraphMCP
 
 # With intelligence features (standard mode)
-pip install "memorygraphMCP[intelligence]"
+pip install --user "memorygraphMCP[intelligence]"
 
 # Full power with Neo4j
-pip install "memorygraphMCP[neo4j,intelligence]"
+pip install --user "memorygraphMCP[neo4j,intelligence]"
 ```
 
-### Option 2: Docker
+**Use this if** you've already configured Python's bin directory in your PATH.
+
+### Option 3: Docker
 
 ```bash
 # SQLite mode (default)
@@ -409,7 +441,7 @@ docker compose up -d
 docker compose -f docker-compose.neo4j.yml up -d
 ```
 
-### Option 3: uvx (Quick Test / No Install)
+### Option 4: uvx (Quick Test / No Install)
 
 Try memorygraph without installation using uvx:
 
@@ -432,12 +464,16 @@ uvx memorygraph --backend sqlite --profile lite
 
 | Method | Setup Time | Use Case | Persistence | Recommended For |
 |--------|-----------|----------|-------------|-----------------|
-| **pip install** | 30 sec | Daily use, MCP server | Yes | Most users |
-| **Docker** | 5 min | Team/production | Yes | Power users, teams |
-| **uvx** | 10 sec* | Quick test, CI/CD | No** | Testing, automation |
+| **pipx** | 1 min* | Daily use, MCP server | Yes | Most users (automatic PATH) |
+| **pip --user** | 30 sec | Daily use, MCP server | Yes | Users with Python bin in PATH |
+| **Docker** | 5 min | Team/production | Yes | Teams, production |
+| **uvx** | 10 sec** | Quick test, CI/CD | No*** | Testing, automation |
 
-\* First run slower (downloads package), subsequent runs cached
-\*\* Requires explicit database path for persistent data (`MEMORY_SQLITE_PATH`)
+\* Includes pipx installation time (one-time setup)
+\*\* First run slower (downloads package), subsequent runs cached
+\*\*\* Requires explicit database path for persistent data (`MEMORY_SQLITE_PATH`)
+
+**Recommendation**: Start with **pipx** for automatic PATH handling. Only use **pip** if you've already configured Python's bin directory in your PATH.
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed installation options.
 

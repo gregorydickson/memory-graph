@@ -180,6 +180,7 @@ class BackendFactory:
         db_path = os.getenv("MEMORY_SQLITE_PATH")
         backend = SQLiteFallbackBackend(db_path=db_path)
         await backend.connect()
+        await backend.initialize_schema()
         return backend
 
     @staticmethod

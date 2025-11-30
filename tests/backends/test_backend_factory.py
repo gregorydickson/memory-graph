@@ -50,9 +50,10 @@ class TestBackendFactoryExplicitSelection:
             "MEMORY_BACKEND": "sqlite"
         }):
             with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
-                backend = await BackendFactory.create_backend()
+                with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
+                    backend = await BackendFactory.create_backend()
 
-                assert isinstance(backend, SQLiteFallbackBackend)
+                    assert isinstance(backend, SQLiteFallbackBackend)
 
     @pytest.mark.asyncio
     async def test_invalid_backend_type_raises_error(self):
@@ -108,9 +109,10 @@ class TestBackendFactoryAutoSelection:
                 with patch.object(MemgraphBackend, 'connect', side_effect=DatabaseConnectionError("Failed")):
                     # SQLite succeeds
                     with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
-                        backend = await BackendFactory.create_backend()
+                        with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
+                            backend = await BackendFactory.create_backend()
 
-                        assert isinstance(backend, SQLiteFallbackBackend)
+                            assert isinstance(backend, SQLiteFallbackBackend)
 
     @pytest.mark.asyncio
     async def test_auto_select_sqlite_directly_when_no_others_configured(self):
@@ -119,9 +121,10 @@ class TestBackendFactoryAutoSelection:
             "MEMORY_BACKEND": "auto"
         }, clear=True):
             with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
-                backend = await BackendFactory.create_backend()
+                with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
+                    backend = await BackendFactory.create_backend()
 
-                assert isinstance(backend, SQLiteFallbackBackend)
+                    assert isinstance(backend, SQLiteFallbackBackend)
 
     @pytest.mark.asyncio
     async def test_auto_select_raises_when_all_fail(self):
@@ -214,7 +217,8 @@ class TestBackendFactoryPrivateMethods:
             "MEMORY_SQLITE_PATH": "/tmp/test.db"
         }):
             with patch.object(SQLiteFallbackBackend, 'connect', new=AsyncMock()):
-                backend = await BackendFactory._create_sqlite()
+                with patch.object(SQLiteFallbackBackend, 'initialize_schema', new=AsyncMock()):
+                    backend = await BackendFactory._create_sqlite()
 
-                assert isinstance(backend, SQLiteFallbackBackend)
-                assert backend.db_path == "/tmp/test.db"
+                    assert isinstance(backend, SQLiteFallbackBackend)
+                    assert backend.db_path == "/tmp/test.db"

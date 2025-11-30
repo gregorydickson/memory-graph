@@ -26,6 +26,8 @@ from pydantic import ValidationError
 
 from . import __version__
 from .database import MemoryDatabase
+from .sqlite_database import SQLiteMemoryDatabase
+from .backends.sqlite_fallback import SQLiteFallbackBackend
 from .models import (
     Memory,
     MemoryType,
@@ -434,8 +436,14 @@ class ClaudeMemoryServer:
             from .backends.factory import BackendFactory
             self.db_connection = await BackendFactory.create_backend()
 
-            # Initialize memory database
-            self.memory_db = MemoryDatabase(self.db_connection)
+            # Initialize memory database - use SQLiteMemoryDatabase for SQLite backend
+            if isinstance(self.db_connection, SQLiteFallbackBackend):
+                logger.info("Using SQLiteMemoryDatabase for SQLite backend")
+                self.memory_db = SQLiteMemoryDatabase(self.db_connection)
+            else:
+                logger.info("Using MemoryDatabase for Cypher-compatible backend")
+                self.memory_db = MemoryDatabase(self.db_connection)
+
             await self.memory_db.initialize_schema()
 
             # Initialize advanced relationship handlers
@@ -445,7 +453,9 @@ class ClaudeMemoryServer:
             from .integration_tools import IntegrationToolHandlers
             self.integration_handlers = IntegrationToolHandlers(self.memory_db)
 
-            backend_name = getattr(self.db_connection, 'backend_name', 'Unknown')
+            backend_name = getattr(self.db_connection, 'backend_name', lambda: 'Unknown')
+            if callable(backend_name):
+                backend_name = backend_name()
             logger.info(f"Claude Memory Server initialized successfully")
             logger.info(f"Backend: {backend_name}")
             logger.info(f"Tool profile: {Config.TOOL_PROFILE.upper()} ({len(self.tools)} tools enabled)")

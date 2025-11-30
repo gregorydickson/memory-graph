@@ -38,14 +38,26 @@ Claude Code is available in multiple interfaces. **MCP server support and config
 Get up and running in 3 steps:
 
 ```bash
-# 1. Install
-pip install memorygraphMCP
+# 1. Install with pipx (recommended - handles PATH automatically)
+pipx install memorygraphMCP
 
 # 2. Add to Claude Code CLI
+# User scope (global - recommended to start)
 claude mcp add --transport stdio memorygraph memorygraph
+
+# OR Project scope (local to current directory)
+claude mcp add --transport stdio memorygraph memorygraph --scope project
 
 # 3. Restart Claude Code CLI
 ```
+
+> **Alternative**: If Python bin is already in your PATH: `pip install memorygraphMCP`
+>
+> **Don't have pipx?** Install it first: `pip install --user pipx && pipx ensurepath` (one-time setup)
+
+**Which scope should I use?**
+- **User scope** (default): If you want memory available everywhere across all projects
+- **Project scope**: If you want project-specific memory or different configurations per project
 
 ### For Other Claude Code Interfaces
 
@@ -59,7 +71,7 @@ See [MCP Configuration](#mcp-configuration) section below for interface-specific
 
 - **Python**: 3.10 or higher
 - **Claude Code**: Latest version with MCP support
-- **pip**: Python package installer
+- **pip**: Python package installer (for pipx installation)
 
 Check prerequisites:
 ```bash
@@ -69,29 +81,43 @@ pip --version      # Should be installed
 
 ### Install the Package
 
-**Option 1: Basic (Recommended to Start)**
+**Recommended: pipx (Handles PATH automatically)**
+
 ```bash
+# Install pipx if you don't have it (one-time setup)
+pip install --user pipx
+pipx ensurepath
+
+# Then install memorygraph
+pipx install memorygraphMCP
+
+# With intelligence features (standard mode)
+pipx install "memorygraphMCP[intelligence]"
+
+# Full power with Neo4j
+pipx install "memorygraphMCP[neo4j,intelligence]"
+```
+
+**Why pipx?**
+- ✅ Automatic PATH configuration
+- ✅ Isolated environment (no dependency conflicts)
+- ✅ Standard for Python CLI tools
+- ✅ Easy upgrades and uninstalls
+
+**Alternative: pip (If Python bin already in your PATH)**
+
+```bash
+# Basic installation (SQLite, lite mode)
 pip install memorygraphMCP
-```
-- SQLite backend
-- 8 core tools
-- Zero configuration
 
-**Option 2: With Intelligence**
-```bash
-pip install "memorygraph[intelligence]"
-```
-- SQLite backend
-- 15 tools
-- Pattern recognition
+# With intelligence features (standard mode)
+pip install "memorygraphMCP[intelligence]"
 
-**Option 3: Full Power**
-```bash
-pip install "memorygraph[neo4j,intelligence]"
+# Full power with Neo4j
+pip install "memorygraphMCP[neo4j,intelligence]"
 ```
-- Neo4j backend support
-- All 44 tools
-- Advanced analytics
+
+Use this if you've already configured Python's bin directory in your PATH.
 
 ### Verify Installation
 
@@ -105,35 +131,6 @@ memorygraph --show-config
 # Should show default settings
 ```
 
-### Alternative: uvx (Not Recommended for MCP)
-
-You can run via uvx for quick testing, though this is **not recommended for MCP servers**:
-
-```bash
-# Install uv
-pip install uv
-
-# Test without installing
-uvx memorygraph --version
-uvx memorygraph --show-config
-```
-
-**Why not recommended for MCP servers**:
-- ⚠️ Adds latency to every MCP connection (package download/cache check)
-- ⚠️ Harder to configure persistent environment variables
-- ⚠️ Database path must be explicitly set every time
-- ⚠️ MCP servers run continuously - installation overhead isn't worth it
-
-**When uvx makes sense**: Quick testing, CI/CD, version comparison
-
-**If you still want to use uvx for MCP** (not recommended):
-
-See the uvx MCP configuration example in the [MCP Configuration](#uvx-configuration-advanced---not-recommended) section below.
-
-**Better approach**: Use `pip install memorygraphMCP` for MCP servers, use uvx for quick testing only.
-
----
-
 ## MCP Configuration
 
 ### For Claude Code CLI: Use `claude mcp add` Command
@@ -144,24 +141,26 @@ According to the [official Claude Code documentation](https://code.claude.com/do
 
 Claude Code uses multiple configuration files with different purposes. **This is admittedly messy**, and Anthropic is aware of the documentation issues.
 
-| File | Purpose | What Goes Here |
-|------|---------|----------------|
-| **`.mcp.json`** | Project MCP servers | Server configurations for specific project (created by `claude mcp add --scope project`) |
-| **`~/.claude.json`** | Global MCP servers (legacy) | User-level server configurations (managed by `claude mcp add`) |
-| **`~/.claude/settings.json`** | Permissions & behavior | `enabledMcpjsonServers`, environment variables, tool behavior settings |
+| File | Purpose | Scope | What Goes Here |
+|------|---------|-------|----------------|
+| **`.mcp.json`** | Project MCP servers | Local/Project | Server configurations for specific project (created by `claude mcp add --scope project` or `--scope local`) |
+| **`~/.claude.json`** | Global MCP servers | User/Global | User-level server configurations (created by `claude mcp add` or `claude mcp add --scope user`) |
+| **`~/.claude/settings.json`** | Permissions & behavior | User/Global | `enabledMcpjsonServers`, permissions, tool behavior settings (NOT for MCP server definitions) |
 
 ### Key Takeaways
 
 ✅ **DO**:
 - Use `claude mcp add` command (official method)
 - Let the CLI manage configuration files for you
-- Use `--scope project` for project-specific servers
-- Use default (user-level) for servers available across all projects
+- Use `--scope user` (or omit `--scope`) for servers available across all projects
+- Use `--scope project` (or `--scope local`) for project-specific servers
+- Choose scope based on whether you want shared or isolated server instances
 
 ❌ **DON'T**:
 - Put MCP servers in `~/.claude/settings.json` - **it won't work**
 - Manually edit `.mcp.json` or `~/.claude.json` unless absolutely necessary
 - Try to manually manage the "chaotic grab bag" of legacy global settings
+- Forget to specify `--scope project` if you want project-local configuration
 
 **Why this matters**: The configuration system is complex and has legacy files. Using `claude mcp add` ensures your MCP servers are configured in the correct location and format.
 
@@ -171,34 +170,109 @@ Claude Code uses multiple configuration files with different purposes. **This is
 
 ### Configuration Examples
 
-#### User-Level Configuration (Default)
+#### Understanding Scopes
+
+MCP servers can be configured at two different scopes:
+
+| Scope | Where Configured | When to Use |
+|-------|------------------|-------------|
+| **User/Global** | `~/.claude.json` | Server available across all projects and directories |
+| **Local/Project** | `.mcp.json` in current directory | Server only available in specific project |
+
+**Default behavior**: Without `--scope`, servers are added at **user** scope (global).
+
+#### User/Global Scope Configuration
+
+**Recommended for**: Servers you want available everywhere (memory, filesystem, time, etc.)
 
 Servers available across all projects:
 
 ```bash
-# Prerequisite: pip install memorygraphMCP (must be run first)
+# Prerequisite: pipx install memorygraphMCP (must be run first)
+# Default (user scope - available globally)
 claude mcp add --transport stdio memorygraph memorygraph
+
+# Or explicitly specify user scope
+claude mcp add --transport stdio memorygraph memorygraph --scope user
 ```
 
-This uses:
-- SQLite backend (zero config)
+This configuration:
+- Creates/updates `~/.claude.json`
+- Available in all projects and directories
+- Uses SQLite backend (zero config)
 - Lite profile (8 core tools)
 - Default database path: `~/.memorygraph/memory.db`
 
-#### Project-Level Configuration
+#### Local/Project Scope Configuration
 
-Creates `.mcp.json` in your project root:
+**Recommended for**: Project-specific servers with custom configuration or project-specific data
+
+Creates `.mcp.json` in your current directory:
 
 ```bash
-# Prerequisite: pip install memorygraphMCP (must be run first)
+# Prerequisite: pipx install memorygraphMCP (must be run first)
+# Project scope - only available in this project
 claude mcp add --transport stdio memorygraph memorygraph --scope project
+
+# Alternative syntax (same result)
+claude mcp add --transport stdio memorygraph memorygraph --scope local
 ```
+
+This configuration:
+- Creates `.mcp.json` in current directory
+- Only available when working in this directory
+- Useful for project-specific database paths or profiles
+- Can be committed to git for team sharing
+
+#### Practical Examples by Scope
+
+**Example 1: Global memory server (user scope)**
+```bash
+# Prerequisite: pipx install memorygraphMCP (must be run first)
+# Add memory globally - available in all projects
+claude mcp add --transport stdio memorygraph memorygraph --scope user
+```
+Use when: You want one shared memory across all your work.
+
+**Example 2: Project-specific memory (local scope)**
+```bash
+# Prerequisite: pipx install memorygraphMCP (must be run first)
+# Navigate to your project directory first
+cd /path/to/my-project
+
+# Add memory for this project only
+claude mcp add --transport stdio memorygraph memorygraph --scope project \
+  --env MEMORY_SQLITE_PATH=./.memory/project.db
+```
+Use when: Each project should have isolated memory (e.g., team projects, client work).
+
+**Example 3: Different profiles per project**
+```bash
+# Global: Lite profile for general use
+claude mcp add --transport stdio memorygraph memorygraph --scope user
+
+# Project A: Standard profile with intelligence
+cd /path/to/project-a
+claude mcp add --transport stdio memorygraph-ai memorygraph --scope project --profile standard
+
+# Project B: Full profile with Neo4j
+cd /path/to/project-b
+claude mcp add --transport stdio memorygraph-full memorygraph --scope project --profile full \
+  --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
+  --env MEMORY_NEO4J_USER=neo4j \
+  --env MEMORY_NEO4J_PASSWORD=your-password
+```
+Use when: Different projects need different capabilities.
 
 #### Standard Configuration (Pattern Recognition)
 
 ```bash
-# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
+# Prerequisite: pipx install "memorygraphMCP[intelligence]" (must be run first)
+# User scope (global)
 claude mcp add --transport stdio memorygraph memorygraph --profile standard
+
+# Or project scope
+claude mcp add --transport stdio memorygraph memorygraph --scope project --profile standard
 ```
 
 This adds:
@@ -209,7 +283,7 @@ This adds:
 #### Full Configuration (SQLite)
 
 ```bash
-# Prerequisite: pip install "memorygraphMCP[intelligence]" (must be run first)
+# Prerequisite: pipx install "memorygraphMCP[intelligence]" (must be run first)
 claude mcp add --transport stdio memorygraph memorygraph --profile full
 ```
 
@@ -221,7 +295,7 @@ This enables:
 #### Full Configuration (Neo4j)
 
 ```bash
-# Prerequisite: pip install "memorygraphMCP[neo4j,intelligence]" (must be run first)
+# Prerequisite: pipx install "memorygraphMCP[neo4j,intelligence]" (must be run first)
 claude mcp add --transport stdio memorygraph memorygraph --profile full --backend neo4j \
   --env MEMORY_NEO4J_URI=bolt://localhost:7687 \
   --env MEMORY_NEO4J_USER=neo4j \
@@ -237,20 +311,65 @@ This enables:
 #### Custom Database Path
 
 ```bash
-# Prerequisite: pip install memorygraphMCP (must be run first)
-claude mcp add --transport stdio memorygraph memorygraph --profile standard \
-  --env MEMORY_SQLITE_PATH=/path/to/your/project/.memory/memory.db \
+# Prerequisite: pipx install memorygraphMCP (must be run first)
+# User scope with custom path
+claude mcp add --transport stdio memorygraph memorygraph --scope user \
+  --env MEMORY_SQLITE_PATH=/path/to/your/custom/memory.db \
   --env MEMORY_LOG_LEVEL=DEBUG
+
+# Or project scope with relative path
+claude mcp add --transport stdio memorygraph memorygraph --scope project \
+  --env MEMORY_SQLITE_PATH=./.memory/memory.db \
+  --env MEMORY_LOG_LEVEL=DEBUG
+```
+
+#### Additional MCP Server Examples
+
+These examples show general `claude mcp add` usage patterns for any MCP server:
+
+**Adding with environment variables (user scope):**
+```bash
+# GitHub server globally available
+claude mcp add github --scope user --env GITHUB_TOKEN=ghp_xxx -- npx -y @modelcontextprotocol/server-github
+
+# Multiple environment variables
+claude mcp add postgres --scope user \
+  --env DB_HOST=localhost \
+  --env DB_PORT=5432 \
+  --env DB_NAME=mydb \
+  -- npx -y @modelcontextprotocol/server-postgres
+```
+
+**Adding HTTP/remote servers:**
+```bash
+# HTTP transport (user scope)
+claude mcp add sentry --transport http --scope user https://mcp.sentry.dev/mcp
+
+# HTTP transport (project scope)
+claude mcp add api-server --transport http --scope project http://localhost:8080/mcp
+```
+
+**Adding from JSON configuration:**
+```bash
+# User scope JSON
+claude mcp add-json memory --scope user '{"command":"npx","args":["-y","@modelcontextprotocol/server-memory"]}'
+
+# Project scope JSON
+claude mcp add-json memory --scope project '{"command":"npx","args":["-y","@modelcontextprotocol/server-memory"]}'
 ```
 
 #### Verify Installation
 
 ```bash
-# List all MCP servers
+# List all MCP servers (both user and project scope)
 claude mcp list
 
-# Get details for memorygraph
+# Get details for specific server
 claude mcp get memorygraph
+
+# Remove a server (specify scope if needed)
+claude mcp remove memorygraph --scope user
+claude mcp remove memorygraph --scope project
 ```
 
 ---
