@@ -1,12 +1,25 @@
 # Documentation Archive
 
-This directory contains historical documentation that has been superseded by more current documents but is preserved for reference.
+This directory contains historical documentation, completed work archives, and consolidation reports.
+
+**Last Updated**: November 30, 2025
 
 ## Active Documents
 
 **For current project status and active work**, see:
-- `/docs/WORKPLAN.md` - Current Phase 8 tasks and execution plan
+- `/docs/WORKPLAN.md` (v2.0) - Active tasks only, consolidated from multiple workplans
 - `/docs/` - Current documentation (API, architecture, guides)
+
+## Recent Additions (November 30, 2025)
+
+### Workplan Consolidation
+- `WORKPLAN_CONSOLIDATION_2025-11-30.md` - Consolidation process documentation
+- `COMPLETED_TASKS_2025-11-30.md` - All completed tasks as of Nov 30
+- `CONTEXT_EXTRACTION_PHASE1_COMPLETION.md` - Detailed Phase 1 completion report
+
+### Context Extraction Archives
+- `CONTEXT_EXTRACTION_IMPLEMENTATION_SUMMARY.md` - Implementation summary
+- `CONTEXT_EXTRACTION_TEST_REPORT.md` - Test coverage report
 
 ## Archived Documents
 
@@ -83,12 +96,26 @@ This directory contains historical documentation that has been superseded by mor
 
 ## Archive Index
 
-| Document | Archived Date | Lines | Superseded By | Reason |
-|----------|---------------|-------|---------------|--------|
-| `completed_phases.md` | 2025-11-28 | 803 | N/A (historical) | Phase completion archive |
-| `enhancement-plan.md` | 2025-11-28 | 1,838 | WORKPLAN.md + completed_phases.md | Duplicate content |
-| `deployment_strategy.md` | 2025-11-28 | 339 | WORKPLAN.md Phase 8 | Strategy merged |
-| `PHASE4_RELATIONSHIP_SYSTEM.md` | 2025-11-28 | 391 | completed_phases.md | Completion report |
+| Document | Archived Date | Type | Purpose |
+|----------|---------------|------|---------|
+| **November 2025 Archives** ||||
+| `WORKPLAN_CONSOLIDATION_2025-11-30.md` | 2025-11-30 | Process | Workplan consolidation documentation |
+| `COMPLETED_TASKS_2025-11-30.md` | 2025-11-30 | Tasks | All completed tasks (50+ items) |
+| `CONTEXT_EXTRACTION_PHASE1_COMPLETION.md` | 2025-11-30 | Feature | Context extraction Phase 1 completion |
+| `CONTEXT_EXTRACTION_IMPLEMENTATION_SUMMARY.md` | 2025-11-30 | Feature | Implementation summary |
+| `CONTEXT_EXTRACTION_TEST_REPORT.md` | 2025-11-30 | Testing | Test coverage report |
+| **January 2025 Archives** ||||
+| `completed-tasks-2025-01.md` | 2025-01 | Tasks | January completed tasks |
+| `COVERAGE_IMPROVEMENTS_2025-01.md` | 2025-01 | Testing | Coverage improvements |
+| `COVERAGE_REPORT.md` | 2025-01 | Testing | Coverage analysis |
+| **Historical Archives** ||||
+| `completed_phases.md` | 2025-11-28 | Historical | Phases 0-7 completion |
+| `enhancement-plan.md` | 2025-11-28 | Historical | Original 8-phase plan |
+| `deployment_strategy.md` | 2025-11-28 | Historical | Deployment strategy |
+| `PHASE4_RELATIONSHIP_SYSTEM.md` | 2025-11-28 | Historical | Phase 4 report |
+| `PHASE_2.5_COMPLETION_REPORT.md` | 2025-11 | Historical | Phase 2.5 report |
+| `MIGRATION.md` | 2025-11 | Historical | Migration docs |
+| `implementation-plan.md` | 2025-11 | Historical | Implementation planning |
 
 ## Document Lifecycle
 

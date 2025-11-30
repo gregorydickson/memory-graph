@@ -303,6 +303,49 @@ class ClaudeMemoryServer:
                     "type": "object",
                     "properties": {}
                 }
+            ),
+            Tool(
+                name="search_relationships_by_context",
+                description="Search relationships by their structured context fields (scope, conditions, evidence, components)",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "scope": {
+                            "type": "string",
+                            "enum": ["partial", "full", "conditional"],
+                            "description": "Filter by scope (partial, full, or conditional implementation)"
+                        },
+                        "conditions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Filter by conditions (e.g., ['production', 'Redis enabled']). Matches any."
+                        },
+                        "has_evidence": {
+                            "type": "boolean",
+                            "description": "Filter by presence/absence of evidence (verified by tests, etc.)"
+                        },
+                        "evidence": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Filter by specific evidence types (e.g., ['integration tests', 'unit tests']). Matches any."
+                        },
+                        "components": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Filter by components mentioned (e.g., ['auth', 'Redis']). Matches any."
+                        },
+                        "temporal": {
+                            "type": "string",
+                            "description": "Filter by temporal information (e.g., 'v2.1.0', 'since 2024')"
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "description": "Maximum number of results (default: 20)"
+                        }
+                    }
+                }
             )
         ]
 
@@ -354,6 +397,8 @@ class ClaudeMemoryServer:
                     return await self._handle_get_related_memories(arguments)
                 elif name == "get_memory_statistics":
                     return await self._handle_get_memory_statistics(arguments)
+                elif name == "search_relationships_by_context":
+                    return await self._handle_search_relationships_by_context(arguments)
                 # Advanced relationship tools
                 elif name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
                                        "suggest_relationship_type", "reinforce_relationship",
@@ -725,26 +770,37 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
     async def _handle_create_relationship(self, arguments: Dict[str, Any]) -> CallToolResult:
         """Handle create_relationship tool call."""
         try:
+            # Get user-provided context (natural language)
+            user_context = arguments.get("context")
+
+            # Auto-extract structure if context provided
+            structured_context = None
+            if user_context:
+                from .utils.context_extractor import extract_context_structure
+                import json
+                structure = extract_context_structure(user_context)
+                structured_context = json.dumps(structure)  # Serialize to JSON string
+
             properties = RelationshipProperties(
                 strength=arguments.get("strength", 0.5),
                 confidence=arguments.get("confidence", 0.8),
-                context=arguments.get("context")
+                context=structured_context  # Store JSON string
             )
-            
+
             relationship_id = await self.memory_db.create_relationship(
                 from_memory_id=arguments["from_memory_id"],
                 to_memory_id=arguments["to_memory_id"],
                 relationship_type=RelationshipType(arguments["relationship_type"]),
                 properties=properties
             )
-            
+
             return CallToolResult(
                 content=[TextContent(
                     type="text",
                     text=f"Relationship created successfully: {relationship_id}"
                 )]
             )
-            
+
         except Exception as e:
             return CallToolResult(
                 content=[TextContent(
@@ -839,6 +895,86 @@ Tags: {', '.join(memory.tags) if memory.tags else 'None'}
                 content=[TextContent(
                     type="text",
                     text=f"Failed to get memory statistics: {e}"
+                )],
+                isError=True
+            )
+
+    async def _handle_search_relationships_by_context(self, arguments: Dict[str, Any]) -> CallToolResult:
+        """Handle search_relationships_by_context tool call."""
+        try:
+            # Use SQLiteMemoryDatabase's search_relationships_by_context method
+            if not isinstance(self.memory_db, SQLiteMemoryDatabase):
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text="Context-based relationship search is only available with SQLite backend"
+                    )],
+                    isError=True
+                )
+
+            relationships = await self.memory_db.search_relationships_by_context(
+                scope=arguments.get("scope"),
+                conditions=arguments.get("conditions"),
+                has_evidence=arguments.get("has_evidence"),
+                evidence=arguments.get("evidence"),
+                components=arguments.get("components"),
+                temporal=arguments.get("temporal"),
+                limit=arguments.get("limit", 20)
+            )
+
+            if not relationships:
+                return CallToolResult(
+                    content=[TextContent(
+                        type="text",
+                        text="No relationships found matching the specified context criteria"
+                    )]
+                )
+
+            # Format results
+            result_text = f"**Found {len(relationships)} relationships matching context criteria**\n\n"
+
+            # Show applied filters
+            filters_applied = []
+            if arguments.get("scope"):
+                filters_applied.append(f"Scope: {arguments['scope']}")
+            if arguments.get("conditions"):
+                filters_applied.append(f"Conditions: {', '.join(arguments['conditions'])}")
+            if arguments.get("has_evidence") is not None:
+                filters_applied.append(f"Has Evidence: {arguments['has_evidence']}")
+            if arguments.get("evidence"):
+                filters_applied.append(f"Evidence: {', '.join(arguments['evidence'])}")
+            if arguments.get("components"):
+                filters_applied.append(f"Components: {', '.join(arguments['components'])}")
+            if arguments.get("temporal"):
+                filters_applied.append(f"Temporal: {arguments['temporal']}")
+
+            if filters_applied:
+                result_text += "**Filters Applied:**\n"
+                for f in filters_applied:
+                    result_text += f"- {f}\n"
+                result_text += "\n"
+
+            # List relationships
+            for i, rel in enumerate(relationships, 1):
+                result_text += f"{i}. **{rel.type.value}**\n"
+                result_text += f"   - ID: {rel.id}\n"
+                result_text += f"   - From: {rel.from_memory_id}\n"
+                result_text += f"   - To: {rel.to_memory_id}\n"
+                result_text += f"   - Strength: {rel.properties.strength:.2f}\n"
+                if rel.properties.context:
+                    result_text += f"   - Context: {rel.properties.context}\n"
+                result_text += "\n"
+
+            return CallToolResult(
+                content=[TextContent(type="text", text=result_text)]
+            )
+
+        except Exception as e:
+            logger.error(f"Error in search_relationships_by_context: {e}")
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Failed to search relationships by context: {e}"
                 )],
                 isError=True
             )

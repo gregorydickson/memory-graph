@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "memorygraphMCP"
-version = "0.6.0"
+version = "0.7.0"
 description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
     {name = "Gregory Dickson", email = "gregory@example.com"}
@@ -139,3 +139,30 @@ addopts = [
     "--verbose",
 ]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["src/memorygraph"]
+omit = [
+    "*/tests/*",
+    "*/conftest.py",
+    "*/__pycache__/*",
+    "*/.*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+    "raise AssertionError",
+    "\\.\\.\\.",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.html]
+directory = "htmlcov"

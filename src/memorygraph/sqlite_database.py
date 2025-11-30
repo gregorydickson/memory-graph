@@ -541,6 +541,177 @@ class SQLiteMemoryDatabase:
             logger.error(f"Failed to get related memories for {memory_id}: {e}")
             raise DatabaseConnectionError(f"Failed to get related memories: {e}")
 
+    async def search_relationships_by_context(
+        self,
+        scope: Optional[str] = None,
+        conditions: Optional[List[str]] = None,
+        has_evidence: Optional[bool] = None,
+        evidence: Optional[List[str]] = None,
+        components: Optional[List[str]] = None,
+        temporal: Optional[str] = None,
+        limit: int = 20
+    ) -> List[Relationship]:
+        """
+        Search relationships by structured context fields.
+
+        This method queries relationships based on their extracted context structure
+        (scope, conditions, evidence, components, temporal). It parses the context
+        JSON from each relationship and filters based on the provided criteria.
+
+        Args:
+            scope: Filter by scope (partial, full, conditional)
+            conditions: Filter by conditions (OR logic - matches any)
+            has_evidence: Filter by presence/absence of evidence
+            evidence: Filter by specific evidence mentions (OR logic - matches any)
+            components: Filter by components mentioned (OR logic - matches any)
+            temporal: Filter by temporal information
+            limit: Maximum number of results to return (default: 20)
+
+        Returns:
+            List of Relationship objects matching the criteria, ordered by strength
+
+        Raises:
+            DatabaseConnectionError: If query fails
+
+        Examples:
+            # Find all partial implementations
+            await db.search_relationships_by_context(scope="partial")
+
+            # Find relationships verified by tests
+            await db.search_relationships_by_context(has_evidence=True)
+
+            # Find production-only relationships
+            await db.search_relationships_by_context(conditions=["production"])
+
+            # Combined filters: partial scope AND production condition
+            await db.search_relationships_by_context(
+                scope="partial",
+                conditions=["production"]
+            )
+        """
+        from .utils.context_extractor import parse_context
+
+        try:
+            # Get all relationships
+            query = """
+                SELECT
+                    r.id as rel_id,
+                    r.from_id as rel_from,
+                    r.to_id as rel_to,
+                    r.rel_type as rel_type,
+                    r.properties as rel_props
+                FROM relationships r
+            """
+
+            result = self.backend.execute_sync(query)
+
+            # Filter relationships in Python by parsing context
+            matching_relationships = []
+
+            for row in result:
+                # Parse relationship properties
+                rel_props = json.loads(row['rel_props'])
+                context_text = rel_props.get("context")
+
+                # Parse context to get structure
+                context_struct = parse_context(context_text)
+
+                # Apply filters
+                matches = True
+
+                # Filter by scope
+                if scope is not None:
+                    if context_struct.get("scope") != scope:
+                        matches = False
+
+                # Filter by conditions (OR logic - match any)
+                if conditions is not None and matches:
+                    if not context_struct.get("conditions"):
+                        matches = False
+                    else:
+                        # Check if any provided condition matches any extracted condition
+                        extracted_conditions = context_struct.get("conditions", [])
+                        condition_match = any(
+                            any(cond.lower() in extracted.lower() for extracted in extracted_conditions)
+                            for cond in conditions
+                        )
+                        if not condition_match:
+                            matches = False
+
+                # Filter by evidence presence
+                if has_evidence is not None and matches:
+                    has_extracted_evidence = bool(context_struct.get("evidence"))
+                    if has_evidence != has_extracted_evidence:
+                        matches = False
+
+                # Filter by specific evidence (OR logic - match any)
+                if evidence is not None and matches:
+                    if not context_struct.get("evidence"):
+                        matches = False
+                    else:
+                        # Check if any provided evidence matches any extracted evidence
+                        extracted_evidence = context_struct.get("evidence", [])
+                        evidence_match = any(
+                            any(ev.lower() in extracted.lower() for extracted in extracted_evidence)
+                            for ev in evidence
+                        )
+                        if not evidence_match:
+                            matches = False
+
+                # Filter by components (OR logic - match any)
+                if components is not None and matches:
+                    if not context_struct.get("components"):
+                        matches = False
+                    else:
+                        # Check if any provided component matches any extracted component
+                        extracted_components = context_struct.get("components", [])
+                        component_match = any(
+                            any(comp.lower() in extracted.lower() for extracted in extracted_components)
+                            for comp in components
+                        )
+                        if not component_match:
+                            matches = False
+
+                # Filter by temporal
+                if temporal is not None and matches:
+                    extracted_temporal = context_struct.get("temporal")
+                    if not extracted_temporal or temporal.lower() not in extracted_temporal.lower():
+                        matches = False
+
+                # If all filters match, add to results
+                if matches:
+                    try:
+                        rel_type = RelationshipType(row['rel_type'])
+                    except ValueError:
+                        rel_type = RelationshipType.RELATED_TO
+
+                    relationship = Relationship(
+                        id=row['rel_id'],
+                        from_memory_id=row['rel_from'],
+                        to_memory_id=row['rel_to'],
+                        type=rel_type,
+                        properties=RelationshipProperties(
+                            strength=rel_props.get("strength", 0.5),
+                            confidence=rel_props.get("confidence", 0.8),
+                            context=rel_props.get("context"),
+                            evidence_count=rel_props.get("evidence_count", 1)
+                        )
+                    )
+                    matching_relationships.append(relationship)
+
+            # Sort by strength (descending) and limit
+            matching_relationships.sort(key=lambda r: r.properties.strength, reverse=True)
+            matching_relationships = matching_relationships[:limit]
+
+            logger.info(f"Found {len(matching_relationships)} relationships matching context filters")
+            return matching_relationships
+
+        except Exception as e:
+            if isinstance(e, DatabaseConnectionError):
+                raise
+            logger.error(f"Failed to search relationships by context: {e}")
+            raise DatabaseConnectionError(f"Failed to search relationships by context: {e}")
+
     async def get_memory_statistics(self) -> Dict[str, Any]:
         """
         Get database statistics and metrics.
