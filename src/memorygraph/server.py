@@ -25,6 +25,7 @@ from mcp.types import (
 )
 from pydantic import ValidationError
 
+from . import __version__
 from .database import MemoryDatabase
 from .models import (
     Memory,
@@ -849,7 +850,7 @@ async def main():
                 write_stream,
                 InitializationOptions(
                     server_name="claude-memory",
-                    server_version="0.1.0",
+                    server_version=__version__,
                     capabilities=server.server.get_capabilities(
                         notification_options=NotificationOptions(),
                         experimental_capabilities={},
