@@ -77,6 +77,9 @@ ls -la ~/.memorygraph/
 # You should see memory.db
 ```
 
+![Memory Creation](docs/images/memory-creation.jpg)
+*Creating memories and relationships in Claude Code*
+
 **Default Configuration**:
 - Mode: Lite (8 core tools), SQLite backend
 - Storage: `~/.memorygraph/memory.db`
@@ -781,6 +784,11 @@ See [CLAUDE_CODE_SETUP.md](docs/CLAUDE_CODE_SETUP.md) for more configuration exa
 ---
 
 ## Usage Examples
+
+### Memory Database in Action
+
+![Memory Report](docs/images/memory-report.jpg)
+*Example memory database overview showing 28 memories with 18 relationships, organized by type and importance*
 
 ### Basic Memory Storage
 
