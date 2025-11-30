@@ -18,7 +18,6 @@ from mcp.server.stdio import stdio_server
 from mcp.types import (
     Tool,
     TextContent,
-    CallToolRequest,
     CallToolResult,
     ListToolsRequest,
     ListToolsResult,
@@ -325,7 +324,7 @@ class ClaudeMemoryServer:
             return ListToolsResult(tools=self.tools)
         
         @self.server.call_tool()
-        async def handle_call_tool(request: CallToolRequest) -> CallToolResult:
+        async def handle_call_tool(name: str, arguments: dict) -> CallToolResult:
             """Handle tool calls."""
             try:
                 if not self.memory_db:
@@ -337,58 +336,58 @@ class ClaudeMemoryServer:
                         isError=True
                     )
 
-                if request.name == "store_memory":
-                    return await self._handle_store_memory(request.arguments)
-                elif request.name == "get_memory":
-                    return await self._handle_get_memory(request.arguments)
-                elif request.name == "search_memories":
-                    return await self._handle_search_memories(request.arguments)
-                elif request.name == "update_memory":
-                    return await self._handle_update_memory(request.arguments)
-                elif request.name == "delete_memory":
-                    return await self._handle_delete_memory(request.arguments)
-                elif request.name == "create_relationship":
-                    return await self._handle_create_relationship(request.arguments)
-                elif request.name == "get_related_memories":
-                    return await self._handle_get_related_memories(request.arguments)
-                elif request.name == "get_memory_statistics":
-                    return await self._handle_get_memory_statistics(request.arguments)
+                if name == "store_memory":
+                    return await self._handle_store_memory(arguments)
+                elif name == "get_memory":
+                    return await self._handle_get_memory(arguments)
+                elif name == "search_memories":
+                    return await self._handle_search_memories(arguments)
+                elif name == "update_memory":
+                    return await self._handle_update_memory(arguments)
+                elif name == "delete_memory":
+                    return await self._handle_delete_memory(arguments)
+                elif name == "create_relationship":
+                    return await self._handle_create_relationship(arguments)
+                elif name == "get_related_memories":
+                    return await self._handle_get_related_memories(arguments)
+                elif name == "get_memory_statistics":
+                    return await self._handle_get_memory_statistics(arguments)
                 # Advanced relationship tools
-                elif request.name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
+                elif name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
                                        "suggest_relationship_type", "reinforce_relationship",
                                        "get_relationship_types_by_category", "analyze_graph_metrics"]:
                     # Dispatch to advanced handlers
-                    method_name = f"handle_{request.name}"
+                    method_name = f"handle_{name}"
                     handler = getattr(self.advanced_handlers, method_name, None)
                     if handler:
-                        return await handler(request.arguments)
+                        return await handler(arguments)
                     else:
                         return CallToolResult(
-                            content=[TextContent(type="text", text=f"Handler not found: {request.name}")],
+                            content=[TextContent(type="text", text=f"Handler not found: {name}")],
                             isError=True
                         )
 
                 # Intelligence tools
-                elif request.name in ["find_similar_solutions", "suggest_patterns_for_context",
+                elif name in ["find_similar_solutions", "suggest_patterns_for_context",
                                       "get_intelligent_context", "get_project_summary",
                                       "get_session_briefing", "get_memory_history", "track_entity_timeline"]:
                     from .intelligence_tools import INTELLIGENCE_HANDLERS
-                    handler = INTELLIGENCE_HANDLERS.get(request.name)
+                    handler = INTELLIGENCE_HANDLERS.get(name)
                     if handler:
-                        return await handler(self.memory_db, request.arguments)
+                        return await handler(self.memory_db, arguments)
                     else:
                         return CallToolResult(
-                            content=[TextContent(type="text", text=f"Intelligence handler not found: {request.name}")],
+                            content=[TextContent(type="text", text=f"Intelligence handler not found: {name}")],
                             isError=True
                         )
 
                 # Integration tools
-                elif request.name in ["capture_task", "capture_command", "track_error_solution",
+                elif name in ["capture_task", "capture_command", "track_error_solution",
                                       "detect_project", "analyze_project", "track_file_changes",
                                       "identify_patterns", "track_workflow", "suggest_workflow",
                                       "optimize_workflow", "get_session_state"]:
                     if hasattr(self, 'integration_handlers'):
-                        return await self.integration_handlers.dispatch(request.name, request.arguments)
+                        return await self.integration_handlers.dispatch(name, arguments)
                     else:
                         return CallToolResult(
                             content=[TextContent(type="text", text="Integration handlers not initialized")],
@@ -396,16 +395,16 @@ class ClaudeMemoryServer:
                         )
 
                 # Proactive tools
-                elif request.name in ["check_for_issues", "get_suggestions", "predict_solution_effectiveness",
+                elif name in ["check_for_issues", "get_suggestions", "predict_solution_effectiveness",
                                       "suggest_related_memories", "record_outcome", "get_graph_visualization",
                                       "recommend_learning_paths", "identify_knowledge_gaps", "track_memory_roi"]:
                     from .proactive_tools import PROACTIVE_TOOL_HANDLERS
-                    handler = PROACTIVE_TOOL_HANDLERS.get(request.name)
+                    handler = PROACTIVE_TOOL_HANDLERS.get(name)
                     if handler:
-                        return await handler(self.memory_db, request.arguments)
+                        return await handler(self.memory_db, arguments)
                     else:
                         return CallToolResult(
-                            content=[TextContent(type="text", text=f"Proactive handler not found: {request.name}")],
+                            content=[TextContent(type="text", text=f"Proactive handler not found: {name}")],
                             isError=True
                         )
 
@@ -413,13 +412,13 @@ class ClaudeMemoryServer:
                     return CallToolResult(
                         content=[TextContent(
                             type="text",
-                            text=f"Unknown tool: {request.name}"
+                            text=f"Unknown tool: {name}"
                         )],
                         isError=True
                     )
 
             except Exception as e:
-                logger.error(f"Error handling tool call {request.name}: {e}")
+                logger.error(f"Error handling tool call {name}: {e}")
                 return CallToolResult(
                     content=[TextContent(
                         type="text",
