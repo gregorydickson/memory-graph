@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence
 
-from mcp.server import Server
+from mcp.server import Server, NotificationOptions
 from mcp.server.models import InitializationOptions
 from mcp.server.stdio import stdio_server
 from mcp.types import (
@@ -851,8 +851,8 @@ async def main():
                     server_name="claude-memory",
                     server_version="0.1.0",
                     capabilities=server.server.get_capabilities(
-                        notification_options=None,
-                        experimental_capabilities=None,
+                        notification_options=NotificationOptions(),
+                        experimental_capabilities={},
                     ),
                 ),
             )

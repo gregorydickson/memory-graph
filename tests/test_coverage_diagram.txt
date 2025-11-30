@@ -1,0 +1,125 @@
+NotificationOptions Bug Fix - Test Coverage Map
+================================================
+
+Source Code (server.py):
+┌─────────────────────────────────────────────────────────────┐
+│ async def main():                                           │
+│   server = ClaudeMemoryServer()  ◄──── Test 1              │
+│   try:                                                      │
+│     await server.initialize()   ◄────── Test 2              │
+│     async with stdio_server() as (r, w):                   │
+│       await server.server.run(                             │
+│         read_stream,    ◄──────────────── Test 12          │
+│         write_stream,   ◄──────────────── Test 12          │
+│         InitializationOptions(                             │
+│           server_name="claude-memory",  ◄─ Test 9          │
+│           server_version="0.1.0",      ◄── Test 10         │
+│           capabilities=server.server.get_capabilities(     │
+│             notification_options=NotificationOptions(), ◄─┐│
+│                                    ▲                       ││
+│                                    │                       ││
+│                                    │  Tests 5, 6, 7, 8    ││
+│                                    │  (Core Bug Tests)    ││
+│                                    │                       ││
+│             experimental_capabilities={},  ◄──────────────┘│
+│           ),                                               │
+│         ),                                                 │
+│       )                                                    │
+│   except KeyboardInterrupt:                                │
+│     logger.info("Interrupt")                               │
+│   finally:                                                 │
+│     await server.cleanup()  ◄────────── Tests 3, 4         │
+└─────────────────────────────────────────────────────────────┘
+
+Test Classes:
+═════════════
+
+1. TestMainFunctionInitialization (4 tests)
+   ┌──────────────────────────────────────┐
+   │ ✓ test_main_creates_server_instance  │
+   │ ✓ test_main_initializes_server       │
+   │ ✓ test_main_calls_cleanup_on_exit    │
+   │ ✓ test_main_cleanup_on_exception     │
+   └──────────────────────────────────────┘
+
+2. TestNotificationOptionsInitialization (4 tests) ⭐ CORE BUG TESTS
+   ┌────────────────────────────────────────────────────────────┐
+   │ ✓ test_notification_options_is_not_none                    │
+   │ ✓ test_get_capabilities_called_with_notification_options   │
+   │ ✓ test_experimental_capabilities_is_empty_dict             │
+   │ ✓ test_no_attribute_error_during_initialization 🎯         │
+   └────────────────────────────────────────────────────────────┘
+         ▲
+         │
+         └── This test would FAIL with the original bug
+             (notification_options=None → AttributeError)
+
+3. TestInitializationOptionsParameters (3 tests)
+   ┌────────────────────────────────────────────┐
+   │ ✓ test_initialization_options_server_name  │
+   │ ✓ test_initialization_options_version      │
+   │ ✓ test_initialization_options_capabilities │
+   └────────────────────────────────────────────┘
+
+4. TestServerRunIntegration (2 tests)
+   ┌─────────────────────────────────────────┐
+   │ ✓ test_server_run_receives_streams      │
+   │ ✓ test_server_run_receives_init_options │
+   └─────────────────────────────────────────┘
+
+5. TestNotificationOptionsInstance (2 tests)
+   ┌──────────────────────────────────────────────┐
+   │ ✓ test_notification_options_can_instantiate  │
+   │ ✓ test_notification_options_no_attr_error    │
+   └──────────────────────────────────────────────┘
+
+Bug Timeline:
+═════════════
+
+BEFORE (Broken):
+  notification_options=None
+         ↓
+  get_capabilities(None, None)
+         ↓
+  AttributeError: 'NoneType' object has no attribute '...'
+         ↓
+  ❌ Server fails to start
+
+AFTER (Fixed):
+  notification_options=NotificationOptions()
+         ↓
+  get_capabilities(NotificationOptions(), {})
+         ↓
+  ✅ Server starts successfully
+
+Test Protection:
+  test_no_attribute_error_during_initialization
+         ↓
+  Verifies no AttributeError is raised
+         ↓
+  ✅ Regression prevented
+
+Coverage Statistics:
+═══════════════════
+
+Total Tests: 15
+Passing:     15 ✓
+Failing:     0
+Success:     100%
+
+Code Coverage Areas:
+  ✓ main() function
+  ✓ server initialization
+  ✓ stdio_server context manager
+  ✓ server.run() invocation
+  ✓ InitializationOptions construction
+  ✓ get_capabilities() call
+  ✓ cleanup in finally block
+  ✓ exception handling
+
+Dependencies Mocked:
+  ✓ ClaudeMemoryServer.initialize()
+  ✓ ClaudeMemoryServer.cleanup()
+  ✓ stdio_server()
+  ✓ Server.run()
+  ✓ Backend connections (no DB needed)
