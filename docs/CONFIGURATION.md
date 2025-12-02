@@ -271,11 +271,27 @@ export MEMORY_NEO4J_PASSWORD=your-password
 # Memgraph configuration (if using memgraph backend)
 export MEMORY_MEMGRAPH_URI=bolt://localhost:7687
 export MEMORY_MEMGRAPH_USER=memgraph
-export MEMORY_MEMGRAPH_PASSWORD=your-password
+export MEMORY_MEMGRAPH_PASSWORD=memgraph
+
+# Relationship configuration (v0.9.0+)
+export MEMORY_ALLOW_CYCLES=false      # true | false (default) - Allow circular relationships
 
 # Logging
 export MEMORY_LOG_LEVEL=INFO          # DEBUG | INFO | WARNING | ERROR
 ```
+
+### New in v0.9.0
+
+**Cycle Detection Configuration**:
+- `MEMORY_ALLOW_CYCLES` - Controls whether circular relationships are permitted
+  - `false` (default): Prevents cycles using DFS algorithm, raises error if cycle detected
+  - `true`: Allows circular relationships (use with caution)
+  - Example use case: Allowing mutually-dependent patterns or bidirectional workflows
+
+**Health Check Options**:
+- Use `memorygraph --health` to check backend connection and statistics
+- Use `memorygraph --health-json` for JSON output (useful for monitoring/CI)
+- Use `memorygraph --health-timeout 10.0` to set timeout in seconds (default: 5.0)
 
 ## CLI Options
 

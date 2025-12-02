@@ -84,10 +84,31 @@ User Request
 - Need to search with specific tags
 - Need to filter by importance threshold
 - Advanced queries requiring fine control
+- Need pagination for large result sets (v0.9.0+)
+
+**Pagination** (v0.9.0+):
+- Use `limit` and `offset` parameters to navigate large result sets
+- Default limit: 50 results per page
+- Maximum limit: 1000 results per page
+- Returns `PaginatedResult` with total_count, has_more, and next_offset
+
+**Example with pagination**:
+```python
+# First page (results 0-49)
+search_memories(query="authentication", limit=50, offset=0)
+
+# Second page (results 50-99)
+search_memories(query="authentication", limit=50, offset=50)
+
+# Using returned next_offset
+result = search_memories(query="authentication", limit=50)
+if result.has_more:
+    next_page = search_memories(query="authentication", limit=50, offset=result.next_offset)
+```
 
 **Don't use when**:
 - Starting a search (use recall_memories instead)
-- Unless you need specific search parameters
+- Unless you need specific search parameters or pagination
 
 ### 5. get_memory
 
@@ -166,8 +187,9 @@ User Request
 2. **Results found?**
    - Yes → Present results, offer to explore connections
    - No → Try search_memories with different terms or broader filters
-3. **User wants details?** → get_memory(memory_id="...")
-4. **User wants connections?** → get_related_memories(memory_id="...")
+3. **Too many results?** (v0.9.0+) → Use pagination with search_memories
+4. **User wants details?** → get_memory(memory_id="...")
+5. **User wants connections?** → get_related_memories(memory_id="...")
 
 **Example**:
 ```
@@ -175,9 +197,19 @@ User: "What timeouts have we fixed?"
 
 Step 1: recall_memories(query="timeout", memory_types=["solution", "fix"])
 Step 2: [Present results]
-Step 3 (if user asks): get_memory(memory_id="timeout-solution-123")
-Step 4 (if user asks): get_related_memories(memory_id="timeout-solution-123", relationship_types=["SOLVES"])
+Step 3 (if >50 results): search_memories(query="timeout", memory_types=["solution", "fix"], limit=50, offset=0)
+   - Show total count and pagination info
+   - Offer to show next page
+Step 4 (if user asks): get_memory(memory_id="timeout-solution-123")
+Step 5 (if user asks): get_related_memories(memory_id="timeout-solution-123", relationship_types=["SOLVES"])
 ```
+
+**Pagination best practices**:
+- Start with default limit (50) for most queries
+- Only increase limit for specific user requests
+- Show total count to set expectations: "Found 237 results, showing first 50"
+- Offer navigation: "Type 'next' to see more results"
+- Consider filtering before pagination: narrow by tags or type first
 
 ---
 

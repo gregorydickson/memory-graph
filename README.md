@@ -591,12 +591,37 @@ pytest tests/ -v --cov=memorygraph
 
 ---
 
+## What's New in v0.9.0
+
+### Pagination
+- **Result pagination** for large datasets - Use `limit` and `offset` parameters to navigate through large result sets efficiently
+- **PaginatedResult** model provides total count, has_more flag, and next offset for seamless pagination
+
+### Cycle Detection
+- **Prevents circular relationships** by default - DFS algorithm detects cycles before creating relationships
+- **Configuration option** `MEMORY_ALLOW_CYCLES` to allow circular relationships when needed
+- **Clear error messages** when cycles are detected
+
+### Health Check CLI
+- **Quick diagnostics** with `memorygraph --health` - Check backend connection and database statistics
+- **JSON output** with `--health-json` for scripting and monitoring
+- **Configurable timeout** with `--health-timeout` (default: 5 seconds)
+
+### Improved Error Handling
+- **Exception hierarchy** - `MemoryGraphError` base class with specialized errors: `ValidationError`, `NotFoundError`, `BackendError`, `ConfigurationError`
+- **Error decorator** - `@handle_errors` for consistent error handling across all operations
+- **Better error messages** - More context and actionable suggestions in error messages
+
+---
+
 ## Roadmap
 
-### Current (v0.7.1+)
-- SQLite default backend
+### Current (v0.9.0)
+- SQLite default backend with FalkorDB options
 - Two-tier profiles (core/extended)
 - 11 fully implemented MCP tools
+- Result pagination and cycle detection
+- Health check CLI
 - 93% test coverage
 - PyPI + Docker
 

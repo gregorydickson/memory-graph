@@ -12,8 +12,50 @@ memorygraph --version
 # Verify configuration
 memorygraph --show-config
 
+# Run health check (v0.9.0+)
+memorygraph --health
+
+# Health check with JSON output for scripting
+memorygraph --health --health-json
+
 # Check MCP status in Claude Code
 claude mcp list
+```
+
+### Understanding Health Check Output
+
+The health check command provides comprehensive diagnostics:
+
+```bash
+memorygraph --health
+```
+
+**Output**:
+- **Status**: ✅ Healthy or ❌ Unhealthy
+- **Backend**: Type of backend (sqlite, neo4j, etc.)
+- **Connected**: Whether the backend is accessible
+- **Version**: Backend version (if available)
+- **Statistics**: Memory count and other metrics
+- **Database Size**: Size of the database file (SQLite)
+- **Error**: Detailed error message if unhealthy
+
+**Exit codes**:
+- `0` - Healthy (backend connected and operational)
+- `1` - Unhealthy (connection failed or error detected)
+
+**Common health check failures**:
+```bash
+# Timeout (backend not responding)
+Error: Health check timed out after 5.0 seconds
+# Solution: Check if backend is running, increase timeout with --health-timeout 10.0
+
+# Connection refused (backend not accessible)
+Error: Connection refused
+# Solution: Verify backend is running and credentials are correct
+
+# Database locked (SQLite)
+Error: database is locked
+# Solution: Close other connections or kill stale processes
 ```
 
 ## Common Issues
@@ -218,6 +260,59 @@ memorygraph --backend neo4j --import backup.json
 # Verify import
 memorygraph --backend neo4j --show-config
 ```
+
+### Cycle Detection Errors (v0.9.0+)
+
+**Error**: `ValidationError: Creating this relationship would create a cycle`
+
+This error occurs when trying to create a relationship that would form a circular dependency.
+
+```bash
+# Example scenario:
+# Memory A --DEPENDS_ON--> Memory B --DEPENDS_ON--> Memory C --DEPENDS_ON--> Memory A
+#                                                                             ^ Cycle!
+```
+
+**Solutions**:
+
+1. **Redesign the relationship** (recommended):
+   - Review the relationship chain to identify the circular dependency
+   - Remove or restructure relationships to avoid cycles
+   - Use different relationship types that don't imply dependency
+
+2. **Allow cycles** (use with caution):
+   ```bash
+   # Set environment variable
+   export MEMORY_ALLOW_CYCLES=true
+
+   # Or configure in MCP settings
+   claude mcp add --scope user memorygraph \
+     --env MEMORY_ALLOW_CYCLES=true \
+     -- memorygraph
+   ```
+
+   **Warning**: Allowing cycles can lead to:
+   - Infinite loops in traversal operations
+   - Ambiguous dependency resolution
+   - Harder to reason about memory graphs
+
+   Only enable if you have a specific use case requiring bidirectional relationships.
+
+3. **Check existing relationships**:
+   ```bash
+   # Use get_related_memories to trace the chain
+   # Find where the cycle would close
+   ```
+
+**Common cycle patterns**:
+- `A DEPENDS_ON B DEPENDS_ON A` - Mutual dependency
+- `A SOLVES B CAUSES A` - Circular problem/solution
+- `A BUILDS_ON B BUILDS_ON C BUILDS_ON A` - Circular learning chain
+
+**Valid alternatives**:
+- Use `RELATED_TO` for non-directional associations
+- Use `SIMILAR_TO` for equivalent patterns
+- Use bidirectional relationships with `bidirectional=true` flag
 
 ## MCP Configuration Issues
 
