@@ -110,6 +110,9 @@ class Config:
     BRIEFING_VERBOSITY: str = os.getenv("MEMORY_BRIEFING_VERBOSITY", "standard")
     BRIEFING_RECENCY_DAYS: int = int(os.getenv("MEMORY_BRIEFING_RECENCY_DAYS", "7"))
 
+    # Relationship Configuration
+    ALLOW_RELATIONSHIP_CYCLES: bool = os.getenv("MEMORY_ALLOW_CYCLES", "false").lower() == "true"
+
     @classmethod
     def get_backend_type(cls) -> BackendType:
         """
@@ -184,6 +187,9 @@ class Config:
                 "session_briefing": cls.SESSION_BRIEFING,
                 "briefing_verbosity": cls.BRIEFING_VERBOSITY,
                 "briefing_recency_days": cls.BRIEFING_RECENCY_DAYS
+            },
+            "relationships": {
+                "allow_cycles": cls.ALLOW_RELATIONSHIP_CYCLES
             }
         }
 

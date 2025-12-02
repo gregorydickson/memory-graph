@@ -16,9 +16,11 @@ from .models import (
     Memory, MemoryType, MemoryNode, Relationship, RelationshipType,
     RelationshipProperties, SearchQuery, MemoryContext,
     MemoryError, MemoryNotFoundError, RelationshipError,
-    ValidationError, DatabaseConnectionError, SchemaError
+    ValidationError, DatabaseConnectionError, SchemaError, PaginatedResult
 )
 from .backends.sqlite_fallback import SQLiteFallbackBackend
+from .config import Config
+from .utils.graph_algorithms import has_cycle
 
 logger = logging.getLogger(__name__)
 
@@ -505,6 +507,170 @@ class SQLiteMemoryDatabase:
             logger.error(f"Failed to search memories: {e}")
             raise DatabaseConnectionError(f"Failed to search memories: {e}")
 
+    async def search_memories_paginated(self, search_query: SearchQuery) -> PaginatedResult:
+        """
+        Search for memories with pagination support.
+
+        Args:
+            search_query: SearchQuery object with filter criteria, limit, and offset
+
+        Returns:
+            PaginatedResult with memories and pagination metadata
+
+        Raises:
+            DatabaseConnectionError: If search fails
+        """
+        try:
+            # Build SQL WHERE conditions (same logic as search_memories)
+            where_conditions = ["label = 'Memory'"]
+            params = []
+
+            # Multi-term search (takes precedence over single query)
+            if search_query.terms:
+                tolerance = search_query.search_tolerance or "normal"
+                match_mode = search_query.match_mode or "any"
+
+                term_conditions = []
+                for term in search_query.terms:
+                    if tolerance == "strict":
+                        pattern = f"%{term.lower()}%"
+                        term_conditions.append(
+                            "(json_extract(properties, '$.title') LIKE ? OR "
+                            "json_extract(properties, '$.content') LIKE ? OR "
+                            "json_extract(properties, '$.summary') LIKE ?)"
+                        )
+                        params.extend([pattern, pattern, pattern])
+                    else:
+                        patterns = _generate_fuzzy_patterns(term)
+                        pattern_conditions = []
+                        for pattern, weight in patterns:
+                            pattern_conditions.append(
+                                "(json_extract(properties, '$.title') LIKE ? OR "
+                                "json_extract(properties, '$.content') LIKE ? OR "
+                                "json_extract(properties, '$.summary') LIKE ?)"
+                            )
+                            params.extend([pattern, pattern, pattern])
+                        if pattern_conditions:
+                            term_conditions.append(f"({' OR '.join(pattern_conditions)})")
+
+                if term_conditions:
+                    if match_mode == "all":
+                        where_conditions.append(f"({' AND '.join(term_conditions)})")
+                    else:
+                        where_conditions.append(f"({' OR '.join(term_conditions)})")
+
+            elif search_query.query:
+                tolerance = search_query.search_tolerance or "normal"
+
+                if tolerance == "strict":
+                    pattern = f"%{search_query.query.lower()}%"
+                    pattern_conditions = [
+                        "(json_extract(properties, '$.title') LIKE ? OR "
+                        "json_extract(properties, '$.content') LIKE ? OR "
+                        "json_extract(properties, '$.summary') LIKE ?)"
+                    ]
+                    params.extend([pattern, pattern, pattern])
+                    where_conditions.append(f"({' OR '.join(pattern_conditions)})")
+                else:
+                    patterns = _generate_fuzzy_patterns(search_query.query)
+                    pattern_conditions = []
+                    for pattern, weight in patterns:
+                        pattern_conditions.append(
+                            "(json_extract(properties, '$.title') LIKE ? OR "
+                            "json_extract(properties, '$.content') LIKE ? OR "
+                            "json_extract(properties, '$.summary') LIKE ?)"
+                        )
+                        params.extend([pattern, pattern, pattern])
+                    if pattern_conditions:
+                        where_conditions.append(f"({' OR '.join(pattern_conditions)})")
+
+            # Memory type filter
+            if search_query.memory_types:
+                type_placeholders = ','.join('?' * len(search_query.memory_types))
+                where_conditions.append(f"json_extract(properties, '$.type') IN ({type_placeholders})")
+                params.extend([t.value for t in search_query.memory_types])
+
+            # Tags filter
+            if search_query.tags:
+                tag_conditions = []
+                for tag in search_query.tags:
+                    tag_conditions.append("json_extract(properties, '$.tags') LIKE ?")
+                    params.append(f'%"{tag}"%')
+                where_conditions.append(f"({' OR '.join(tag_conditions)})")
+
+            # Project path filter
+            if search_query.project_path:
+                where_conditions.append("json_extract(properties, '$.context_project_path') = ?")
+                params.append(search_query.project_path)
+
+            # Importance filter
+            if search_query.min_importance is not None:
+                where_conditions.append("CAST(json_extract(properties, '$.importance') AS REAL) >= ?")
+                params.append(search_query.min_importance)
+
+            # Confidence filter
+            if search_query.min_confidence is not None:
+                where_conditions.append("CAST(json_extract(properties, '$.confidence') AS REAL) >= ?")
+                params.append(search_query.min_confidence)
+
+            # Date filters
+            if search_query.created_after:
+                where_conditions.append("json_extract(properties, '$.created_at') >= ?")
+                params.append(search_query.created_after.isoformat())
+
+            if search_query.created_before:
+                where_conditions.append("json_extract(properties, '$.created_at') <= ?")
+                params.append(search_query.created_before.isoformat())
+
+            # Build where clause
+            where_clause = " AND ".join(where_conditions)
+
+            # First, get total count
+            count_query = f"SELECT COUNT(*) as total FROM nodes WHERE {where_clause}"
+            count_result = self.backend.execute_sync(count_query, tuple(params))
+            total_count = count_result[0]['total'] if count_result else 0
+
+            # Then get paginated results
+            results_query = f"""
+                SELECT properties FROM nodes
+                WHERE {where_clause}
+                ORDER BY
+                    CAST(json_extract(properties, '$.importance') AS REAL) DESC,
+                    json_extract(properties, '$.created_at') DESC
+                LIMIT ? OFFSET ?
+            """
+            results_params = params + [search_query.limit, search_query.offset]
+
+            result = self.backend.execute_sync(results_query, tuple(results_params))
+
+            memories = []
+            for row in result:
+                properties = json.loads(row['properties'])
+                memory = self._properties_to_memory(properties)
+                if memory:
+                    memories.append(memory)
+
+            # Calculate pagination metadata
+            has_more = (search_query.offset + search_query.limit) < total_count
+            next_offset = (search_query.offset + search_query.limit) if has_more else None
+
+            logger.info(f"Found {len(memories)} memories (page {search_query.offset}-{search_query.offset + len(memories)} of {total_count})")
+
+            return PaginatedResult(
+                results=memories,
+                total_count=total_count,
+                limit=search_query.limit,
+                offset=search_query.offset,
+                has_more=has_more,
+                next_offset=next_offset
+            )
+
+        except Exception as e:
+            if isinstance(e, DatabaseConnectionError):
+                raise
+            logger.error(f"Failed to search memories (paginated): {e}")
+            raise DatabaseConnectionError(f"Failed to search memories (paginated): {e}")
+
     async def _enrich_search_results(
         self,
         memories: List[Memory],
@@ -825,6 +991,26 @@ class SQLiteMemoryDatabase:
                     {"from_id": from_memory_id, "to_id": to_memory_id}
                 )
 
+            # Check for cycles (unless explicitly allowed by configuration)
+            if not Config.ALLOW_RELATIONSHIP_CYCLES:
+                cycle_detected = await has_cycle(
+                    self,
+                    from_memory_id,
+                    to_memory_id,
+                    relationship_type
+                )
+                if cycle_detected:
+                    raise ValidationError(
+                        f"Cannot create relationship {from_memory_id} → {to_memory_id}: "
+                        f"Would create a cycle in the {relationship_type.value} relationship graph",
+                        {
+                            "from_id": from_memory_id,
+                            "to_id": to_memory_id,
+                            "relationship_type": relationship_type.value,
+                            "suggestion": "Check your relationship chain before creating, or enable cycles with MEMORY_ALLOW_CYCLES=true"
+                        }
+                    )
+
             # Insert relationship
             self.backend.execute_sync(
                 """
@@ -840,7 +1026,7 @@ class SQLiteMemoryDatabase:
 
         except Exception as e:
             self.backend.rollback()
-            if isinstance(e, (RelationshipError, DatabaseConnectionError)):
+            if isinstance(e, (RelationshipError, DatabaseConnectionError, ValidationError)):
                 raise
             logger.error(f"Failed to create relationship: {e}")
             raise RelationshipError(f"Failed to create relationship: {e}")

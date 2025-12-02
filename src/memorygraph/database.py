@@ -21,7 +21,7 @@ from .models import (
     Memory, MemoryType, MemoryNode, Relationship, RelationshipType,
     RelationshipProperties, SearchQuery, MemoryGraph, MemoryContext,
     MemoryError, MemoryNotFoundError, RelationshipError,
-    ValidationError, DatabaseConnectionError, SchemaError
+    ValidationError, DatabaseConnectionError, SchemaError, PaginatedResult
 )
 
 
@@ -425,7 +425,110 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to search memories: {e}")
             raise DatabaseConnectionError(f"Failed to search memories: {e}")
-    
+
+    async def search_memories_paginated(self, search_query: SearchQuery) -> PaginatedResult:
+        """Search for memories with pagination support.
+
+        Args:
+            search_query: SearchQuery object with filter criteria, limit, and offset
+
+        Returns:
+            PaginatedResult with memories and pagination metadata
+
+        Raises:
+            DatabaseConnectionError: If search fails
+        """
+        try:
+            conditions = []
+            parameters = {}
+
+            # Build WHERE conditions based on search parameters (same as search_memories)
+            if search_query.query:
+                conditions.append("(m.title CONTAINS $query OR m.content CONTAINS $query OR m.summary CONTAINS $query)")
+                parameters["query"] = search_query.query
+
+            if search_query.memory_types:
+                conditions.append("m.type IN $memory_types")
+                parameters["memory_types"] = [t.value for t in search_query.memory_types]
+
+            if search_query.tags:
+                conditions.append("ANY(tag IN $tags WHERE tag IN m.tags)")
+                parameters["tags"] = search_query.tags
+
+            if search_query.project_path:
+                conditions.append("m.context_project_path = $project_path")
+                parameters["project_path"] = search_query.project_path
+
+            if search_query.min_importance is not None:
+                conditions.append("m.importance >= $min_importance")
+                parameters["min_importance"] = search_query.min_importance
+
+            if search_query.min_confidence is not None:
+                conditions.append("m.confidence >= $min_confidence")
+                parameters["min_confidence"] = search_query.min_confidence
+
+            if search_query.created_after:
+                conditions.append("datetime(m.created_at) >= datetime($created_after)")
+                parameters["created_after"] = search_query.created_after.isoformat()
+
+            if search_query.created_before:
+                conditions.append("datetime(m.created_at) <= datetime($created_before)")
+                parameters["created_before"] = search_query.created_before.isoformat()
+
+            where_clause = " AND ".join(conditions) if conditions else "true"
+
+            # First, get the total count
+            count_query = f"""
+            MATCH (m:Memory)
+            WHERE {where_clause}
+            RETURN count(m) as total_count
+            """
+
+            count_result = await self.connection.execute_read_query(count_query, parameters)
+            total_count = count_result[0]["total_count"] if count_result else 0
+
+            # Then get the paginated results
+            results_query = f"""
+            MATCH (m:Memory)
+            WHERE {where_clause}
+            RETURN m
+            ORDER BY m.importance DESC, m.created_at DESC
+            SKIP $offset
+            LIMIT $limit
+            """
+
+            parameters["offset"] = search_query.offset
+            parameters["limit"] = search_query.limit
+
+            result = await self.connection.execute_read_query(results_query, parameters)
+
+            memories = []
+            for record in result:
+                memory = self._neo4j_to_memory(record["m"])
+                if memory:
+                    memories.append(memory)
+
+            # Calculate pagination metadata
+            has_more = (search_query.offset + search_query.limit) < total_count
+            next_offset = (search_query.offset + search_query.limit) if has_more else None
+
+            logger.info(f"Found {len(memories)} memories (page {search_query.offset}-{search_query.offset + len(memories)} of {total_count})")
+
+            return PaginatedResult(
+                results=memories,
+                total_count=total_count,
+                limit=search_query.limit,
+                offset=search_query.offset,
+                has_more=has_more,
+                next_offset=next_offset
+            )
+
+        except Exception as e:
+            if isinstance(e, DatabaseConnectionError):
+                raise
+            logger.error(f"Failed to search memories (paginated): {e}")
+            raise DatabaseConnectionError(f"Failed to search memories (paginated): {e}")
+
     async def update_memory(self, memory: Memory) -> bool:
         """Update an existing memory.
 

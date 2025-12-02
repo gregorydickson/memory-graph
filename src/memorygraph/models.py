@@ -320,7 +320,8 @@ class SearchQuery(BaseModel):
         min_effectiveness: Minimum effectiveness threshold (0.0-1.0)
         created_after: Only include memories created after this datetime
         created_before: Only include memories created before this datetime
-        limit: Maximum number of results (1-100, default 20)
+        limit: Maximum number of results (1-1000, default 50)
+        offset: Number of results to skip for pagination (default 0)
         include_relationships: Include relationship information in results
         search_tolerance: Search mode - 'strict', 'normal', or 'fuzzy'
         match_mode: Term matching mode - 'any' (OR) or 'all' (AND)
@@ -339,7 +340,8 @@ class SearchQuery(BaseModel):
     min_effectiveness: Optional[float] = Field(None, ge=0.0, le=1.0)
     created_after: Optional[datetime] = None
     created_before: Optional[datetime] = None
-    limit: int = Field(default=20, ge=1, le=100)
+    limit: int = Field(default=50, ge=1, le=1000)
+    offset: int = Field(default=0, ge=0)
     include_relationships: bool = Field(default=True)
     search_tolerance: Optional[str] = Field(default="normal")
     match_mode: Optional[str] = Field(default="any", description="Match mode for terms: 'any' (OR) or 'all' (AND)")
@@ -388,9 +390,31 @@ class SearchQuery(BaseModel):
         return v
 
 
+class PaginatedResult(BaseModel):
+    """Paginated result wrapper for memory search operations.
+
+    Provides pagination metadata to help clients navigate large result sets.
+
+    Attributes:
+        results: List of memories in this page
+        total_count: Total number of memories matching the query
+        limit: Maximum number of results per page
+        offset: Number of results skipped
+        has_more: True if more results are available
+        next_offset: Offset for the next page (None if no more pages)
+    """
+
+    results: List[Memory]
+    total_count: int = Field(ge=0)
+    limit: int = Field(ge=1, le=1000)
+    offset: int = Field(ge=0)
+    has_more: bool
+    next_offset: Optional[int] = None
+
+
 class MemoryGraph(BaseModel):
     """Graph representation of memories and their relationships."""
-    
+
     memories: List[Memory]
     relationships: List[Relationship]
     metadata: Dict[str, Any] = Field(default_factory=dict)
