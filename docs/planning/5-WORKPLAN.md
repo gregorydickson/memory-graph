@@ -1,0 +1,387 @@
+# 5-WORKPLAN: New Features (Pagination & Cycle Detection)
+
+**Goal**: Implement pagination for large result sets and cycle detection for relationships
+**Priority**: LOW - Nice to have features, not blocking
+**Estimated Tasks**: 22 tasks
+**Value**: Improves scalability and data integrity
+
+---
+
+## Prerequisites
+
+- [ ] 1-WORKPLAN completed (critical fixes)
+- [ ] 2-WORKPLAN completed (test coverage solid)
+- [ ] 3-WORKPLAN completed (error handling in place)
+
+---
+
+## 1. Result Pagination
+
+**Problem**: Large result sets can overwhelm clients and slow down queries
+**Solution**: Add pagination support with offset/limit and metadata
+
+### 1.1 Design Pagination API
+
+- [ ] Research pagination best practices (offset vs cursor-based)
+- [ ] Design pagination parameters:
+  - `limit`: Maximum results per page (default: 50, max: 1000)
+  - `offset`: Number of results to skip (default: 0)
+- [ ] Design pagination response format:
+  - `results`: List of items
+  - `total_count`: Total matching items
+  - `has_more`: Boolean indicating more results available
+  - `next_offset`: Suggested offset for next page
+
+**File**: Create `/Users/gregorydickson/claude-code-memory/docs/adr/011-pagination-design.md`
+
+### 1.2 Update Data Models
+
+**File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/models/search_query.py`
+
+- [ ] Add `limit` field to SearchQuery (default: 50, max: 1000)
+- [ ] Add `offset` field to SearchQuery (default: 0)
+- [ ] Add validation for limit (must be > 0 and <= 1000)
+- [ ] Add validation for offset (must be >= 0)
+
+**File**: Create `/Users/gregorydickson/claude-code-memory/src/memorygraph/models/paginated_result.py`
+
+- [ ] Create `PaginatedResult` model:
+  ```python
+  class PaginatedResult(BaseModel):
+      results: List[Any]
+      total_count: int
+      limit: int
+      offset: int
+      has_more: bool
+      next_offset: Optional[int]
+  ```
+
+### 1.3 Write Pagination Tests
+
+**File**: `/Users/gregorydickson/claude-code-memory/tests/test_pagination.py`
+
+- [ ] Create test dataset (insert 200 memories)
+- [ ] Test pagination with limit=10 (expect 20 pages)
+- [ ] Test first page (offset=0, limit=50)
+- [ ] Test middle page (offset=50, limit=50)
+- [ ] Test last page (offset=150, limit=50, only 50 results)
+- [ ] Test beyond last page (offset=300, empty results)
+- [ ] Test pagination with search filters
+- [ ] Test pagination stability (concurrent inserts)
+- [ ] Test `has_more` flag correctness
+- [ ] Test `next_offset` calculation
+
+### 1.4 Implement Pagination in SQLite Backend
+
+**File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/backends/sqlite_backend.py`
+
+**Update `search_memories()` method**:
+- [ ] Add `LIMIT` and `OFFSET` clauses to SQL queries
+- [ ] Add count query for `total_count`: `SELECT COUNT(*) FROM memories WHERE ...`
+- [ ] Calculate `has_more`: `offset + limit < total_count`
+- [ ] Calculate `next_offset`: `offset + limit if has_more else None`
+- [ ] Return `PaginatedResult` instead of `List[Memory]`
+- [ ] Handle edge cases (offset > total_count)
+
+**Example Implementation**:
+```python
+def search_memories(self, query: SearchQuery) -> PaginatedResult:
+    # Count total matches
+    count_sql = "SELECT COUNT(*) FROM memories WHERE ..."
+    total_count = self._execute_query(count_sql)
+
+    # Get page of results
+    results_sql = "SELECT * FROM memories WHERE ... LIMIT ? OFFSET ?"
+    results = self._execute_query(results_sql, [query.limit, query.offset])
+
+    has_more = (query.offset + query.limit) < total_count
+    next_offset = (query.offset + query.limit) if has_more else None
+
+    return PaginatedResult(
+        results=results,
+        total_count=total_count,
+        limit=query.limit,
+        offset=query.offset,
+        has_more=has_more,
+        next_offset=next_offset
+    )
+```
+
+### 1.5 Implement Pagination in Other Backends
+
+**Neo4j Backend** (`neo4j_backend.py`):
+- [ ] Add `SKIP` and `LIMIT` to Cypher queries
+- [ ] Add count query: `MATCH (m:Memory) WHERE ... RETURN count(m)`
+- [ ] Return `PaginatedResult`
+
+**Memgraph Backend** (`memgraph_backend.py`):
+- [ ] Same as Neo4j (Cypher queries)
+
+**FalkorDB Backends** (`falkordb_backend.py`, `falkordblite_backend.py`):
+- [ ] Add pagination to queries
+- [ ] Return `PaginatedResult`
+
+### 1.6 Update Tool Handlers
+
+**Files to update**:
+- `/Users/gregorydickson/claude-code-memory/src/memorygraph/tools/search_tools.py`
+- `/Users/gregorydickson/claude-code-memory/src/memorygraph/tools/activity_tools.py`
+
+**Tasks**:
+- [ ] Add `limit` and `offset` parameters to tool schemas
+- [ ] Update `handle_search_memories()` to use pagination
+- [ ] Update `handle_recall_memories()` to use pagination
+- [ ] Update `handle_get_recent_activity()` to use pagination
+- [ ] Update response format to include pagination metadata
+- [ ] Update tool descriptions with pagination examples
+
+**Example Tool Schema Update**:
+```python
+{
+    "name": "search_memories",
+    "inputSchema": {
+        "properties": {
+            "query": {"type": "string"},
+            "limit": {
+                "type": "integer",
+                "default": 50,
+                "minimum": 1,
+                "maximum": 1000,
+                "description": "Maximum results per page"
+            },
+            "offset": {
+                "type": "integer",
+                "default": 0,
+                "minimum": 0,
+                "description": "Number of results to skip"
+            }
+        }
+    }
+}
+```
+
+### 1.7 Update Documentation
+
+**File**: `/Users/gregorydickson/claude-code-memory/docs/TOOL_SELECTION_GUIDE.md`
+
+- [ ] Document pagination usage
+- [ ] Add examples of paginated queries
+- [ ] Document best practices (limit size recommendations)
+
+**File**: `/Users/gregorydickson/claude-code-memory/README.md`
+
+- [ ] Add pagination example to usage section
+
+### 1.8 Performance Testing
+
+**File**: `/Users/gregorydickson/claude-code-memory/tests/benchmarks/test_pagination_performance.py`
+
+- [ ] Benchmark pagination performance with 10k memories
+- [ ] Compare paginated vs unpaginated query performance
+- [ ] Verify no N+1 query issues
+- [ ] Document performance characteristics
+
+---
+
+## 2. Cycle Detection in Relationships
+
+**Problem**: Circular relationship chains can cause infinite loops
+**Solution**: Detect cycles when creating relationships
+
+### 2.1 Design Cycle Detection
+
+- [ ] Research cycle detection algorithms:
+  - Depth-First Search (DFS) - O(V+E) complexity
+  - Union-Find - O(α(n)) amortized
+- [ ] **Decision**: Use DFS (simpler, sufficient for small graphs)
+- [ ] Decide on behavior: Prevent cycles OR warn about them
+- [ ] **Decision**: Prevent cycles, return helpful error message
+
+**File**: Create `/Users/gregorydickson/claude-code-memory/docs/adr/012-cycle-detection.md`
+
+- [ ] Document cycle detection strategy
+- [ ] Document performance implications
+- [ ] Document configuration options
+
+### 2.2 Write Cycle Detection Tests
+
+**File**: `/Users/gregorydickson/claude-code-memory/tests/test_cycle_detection.py`
+
+- [ ] Test simple cycle: A → B → A
+- [ ] Test 3-node cycle: A → B → C → A
+- [ ] Test 4-node cycle: A → B → C → D → A
+- [ ] Test no cycle (linear chain): A → B → C → D
+- [ ] Test no cycle (tree structure): A → B, A → C
+- [ ] Test self-loop: A → A
+- [ ] Test cycle with different relationship types (should allow)
+- [ ] Test performance (cycle detection on 1000-node graph)
+
+### 2.3 Implement Cycle Detection Algorithm
+
+**File**: Create `/Users/gregorydickson/claude-code-memory/src/memorygraph/utils/graph_algorithms.py`
+
+- [ ] Create module file
+- [ ] Implement DFS-based cycle detection:
+  ```python
+  def has_cycle(
+      backend: GraphBackend,
+      from_id: str,
+      to_id: str,
+      relationship_type: str
+  ) -> bool:
+      """Check if adding relationship would create a cycle.
+
+      Uses DFS to traverse from to_id and check if from_id is reachable.
+
+      Args:
+          backend: Backend to query relationships
+          from_id: Source memory ID
+          to_id: Target memory ID
+          relationship_type: Type of relationship to check
+
+      Returns:
+          True if cycle would be created, False otherwise
+      """
+  ```
+- [ ] Optimize for performance (visited set, depth limit)
+- [ ] Handle disconnected graphs
+
+### 2.4 Add Unit Tests for Algorithm
+
+**File**: `/Users/gregorydickson/claude-code-memory/tests/utils/test_graph_algorithms.py`
+
+- [ ] Test `has_cycle()` with various graph structures
+- [ ] Test with mocked backend
+- [ ] Test performance with large graphs
+
+### 2.5 Integrate Cycle Detection into Backends
+
+**Update all backends**:
+- SQLite (`sqlite_backend.py`)
+- Neo4j (`neo4j_backend.py`)
+- Memgraph (`memgraph_backend.py`)
+- FalkorDB (`falkordb_backend.py`, `falkordblite_backend.py`)
+
+**For each backend's `create_relationship()` method**:
+- [ ] Call `has_cycle()` before creating relationship
+- [ ] If cycle detected, raise `ValidationError` with clear message:
+  ```python
+  raise ValidationError(
+      f"Cannot create relationship {from_id} → {to_id}: "
+      f"Would create a cycle in the {relationship_type} relationship graph"
+  )
+  ```
+- [ ] Add configuration option to disable cycle detection:
+  ```python
+  MEMORY_ALLOW_CYCLES=false  # Default: prevent cycles
+  ```
+
+### 2.6 Add Configuration
+
+**File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/config.py`
+
+- [ ] Add `ALLOW_RELATIONSHIP_CYCLES` configuration option
+- [ ] Default: `False` (prevent cycles)
+- [ ] Environment variable: `MEMORY_ALLOW_CYCLES`
+
+### 2.7 Update Tool Handler
+
+**File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/tools/relationship_tools.py`
+
+- [ ] Update `handle_create_relationship()` to catch `ValidationError`
+- [ ] Return helpful error message to user:
+  ```json
+  {
+      "error": "Cannot create relationship: would create a cycle",
+      "details": "Creating A → B → C → A forms a cycle",
+      "suggestion": "Check your relationship chain before creating"
+  }
+  ```
+
+### 2.8 Update Documentation
+
+**File**: `/Users/gregorydickson/claude-code-memory/docs/TROUBLESHOOTING.md`
+
+- [ ] Add section on cycle detection
+- [ ] Explain why cycles are prevented
+- [ ] Document how to allow cycles (configuration)
+- [ ] Add examples of cycle errors
+
+**File**: `/Users/gregorydickson/claude-code-memory/README.md`
+
+- [ ] Mention cycle detection in features list
+
+### 2.9 Optional: Cycle Visualization
+
+**File**: Create `/Users/gregorydickson/claude-code-memory/src/memorygraph/cli.py` command
+
+- [ ] Add `memorygraph detect-cycles` command
+- [ ] Scan existing relationships for cycles
+- [ ] Report any cycles found
+- [ ] Optionally visualize cycle path (ASCII art or DOT format)
+
+---
+
+## 3. Integration and Testing
+
+### 3.1 Combined Feature Testing
+
+**File**: `/Users/gregorydickson/claude-code-memory/tests/test_pagination_and_cycles.py`
+
+- [ ] Test paginated search with cycle detection enabled
+- [ ] Test creating relationships across pages
+- [ ] Verify no performance degradation with both features enabled
+
+### 3.2 Update Integration Tests
+
+- [ ] Run full integration test suite
+- [ ] Verify all backends work with new features
+- [ ] Test MCP tool responses include pagination metadata
+
+### 3.3 Performance Testing
+
+**File**: `/Users/gregorydickson/claude-code-memory/tests/benchmarks/test_new_features_performance.py`
+
+- [ ] Benchmark pagination overhead (should be minimal)
+- [ ] Benchmark cycle detection overhead (acceptable for <1000 nodes)
+- [ ] Document performance impact
+
+---
+
+## Acceptance Criteria
+
+### Pagination
+- [ ] Pagination works across all backends
+- [ ] Pagination parameters validated correctly
+- [ ] Pagination metadata accurate (total_count, has_more, next_offset)
+- [ ] Tool handlers support pagination
+- [ ] Tests verify pagination correctness
+- [ ] Performance impact documented (<10% overhead)
+- [ ] Documentation includes pagination examples
+
+### Cycle Detection
+- [ ] Cycle detection prevents circular relationships
+- [ ] DFS algorithm correctly detects all cycle types
+- [ ] Configuration allows enabling/disabling
+- [ ] Error messages are helpful and actionable
+- [ ] Performance impact acceptable (<100ms for cycle check)
+- [ ] Tests verify cycle detection correctness
+- [ ] Documentation explains cycle detection
+
+### Overall
+- [ ] All 910+ tests pass
+- [ ] No regressions in existing functionality
+- [ ] Code quality maintained (type hints, docstrings, error handling)
+- [ ] CI pipeline passes all checks
+
+---
+
+## Notes
+
+- These features are enhancements, not critical fixes
+- Can be implemented independently (pagination first, then cycles)
+- Pagination is higher priority (common need for large datasets)
+- Cycle detection is more niche (useful for complex knowledge graphs)
+- Both features should be well-tested before release
+- Consider beta testing with power users
+- Estimated time: 3-4 days total (2 days pagination, 1-2 days cycle detection)

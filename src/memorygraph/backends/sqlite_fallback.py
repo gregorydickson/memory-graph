@@ -48,9 +48,10 @@ class SQLiteFallbackBackend(GraphBackend):
             )
 
         default_path = os.path.expanduser("~/.memorygraph/memory.db")
-        self.db_path = db_path or os.getenv("MEMORY_SQLITE_PATH", default_path)
+        resolved_path = db_path or os.getenv("MEMORY_SQLITE_PATH", default_path)
+        self.db_path: str = resolved_path if resolved_path else default_path
         self.conn: Optional[sqlite3.Connection] = None
-        self.graph: Optional[nx.DiGraph] = None
+        self.graph: Optional[nx.DiGraph] = None  # type: ignore[misc,no-any-unimported]
         self._connected = False
 
         # Ensure directory exists
@@ -297,8 +298,9 @@ class SQLiteFallbackBackend(GraphBackend):
         try:
             cursor = self.conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='nodes_fts'")
-            return cursor.fetchone()[0] > 0
-        except:
+            result = cursor.fetchone()
+            return bool(result[0] > 0) if result else False
+        except Exception:
             return False
 
     def supports_transactions(self) -> bool:
@@ -325,7 +327,7 @@ class SQLiteFallbackBackend(GraphBackend):
 
     # Helper methods for direct database operations (used by MemoryDatabase)
 
-    def execute_sync(self, query: str, parameters: Optional[tuple] = None) -> list[dict[str, Any]]:
+    def execute_sync(self, query: str, parameters: Optional[tuple[Any, ...]] = None) -> list[dict[str, Any]]:
         """
         Execute a synchronous SQL query (for internal use).
 

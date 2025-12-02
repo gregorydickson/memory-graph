@@ -801,18 +801,29 @@ Early Supporter: $6/month forever (first 100 users)
 
 ---
 
-## Phase 4: Team Features
+## Phase 4: Team Features (Multi-Tenancy)
 **Timeline**: Weeks 15-22
 **Goal**: Enable team collaboration, expand revenue
+**Reference**: See ADR 009 (Multi-Tenant Team Memory Sharing Architecture)
 
-### 4.1 Shared Team Memory
+**Architecture Decision**: Hybrid multi-tenancy with optional authentication (ADR 009)
+- Backward compatible with single-user deployments
+- Progressive enhancement approach
+- Four implementation phases planned
+
+### 4.1 Shared Team Memory (v0.9.0 - Schema Enhancement)
+
+**Reference**: ADR 009 Phase 1
 
 | Task | Priority | Status |
 |------|----------|--------|
+| Add optional multi-tenancy fields to MemoryContext | 🔴 High | ⬜ TODO |
+| Create conditional indexes (tenant_id, team_id, visibility) | 🔴 High | ⬜ TODO |
+| Implement configuration system (MEMORY_MULTI_TENANT_MODE) | 🔴 High | ⬜ TODO |
 | Team creation and management | 🔴 High | ⬜ TODO |
 | Invite team members | 🔴 High | ⬜ TODO |
 | Shared memory namespace | 🔴 High | ⬜ TODO |
-| Personal vs team memory toggle | 🔴 High | ⬜ TODO |
+| Personal vs team memory toggle (visibility: private/project/team/public) | 🔴 High | ⬜ TODO |
 | Team-wide search | 🔴 High | ⬜ TODO |
 
 **User Experience**:
@@ -862,12 +873,41 @@ From @mike (1 month ago):
 | Data retention settings | 🟡 Medium | ⬜ TODO |
 | Billing management for team | 🔴 High | ⬜ TODO |
 
+### 4.5 Multi-Tenancy Implementation Phases (ADR 009)
+
+**Phase 1: Schema Enhancement (v0.9.0)**
+- Add optional multi-tenancy fields to MemoryContext
+- Create conditional indexes
+- Implement configuration system
+- Maintain 100% backward compatibility
+- See `docs/6-WORKPLAN.md` for detailed tasks
+
+**Phase 2: Query Layer (v0.10.0)**
+- Implement multi-tenant query filters
+- Add visibility enforcement
+- Create tenant-aware search methods
+- Add performance benchmarks
+
+**Phase 3: Authentication Integration (v1.0.0)**
+- JWT token validation
+- OAuth2 provider integration
+- MCP protocol extension for auth context
+- Session management
+
+**Phase 4: Advanced RBAC (v1.1.0)**
+- Role-based permissions
+- Fine-grained access control
+- Audit logging
+- Cross-tenant sharing controls
+
 ### Phase 4 Success Metrics
 - [ ] 10+ team subscriptions
 - [ ] 50+ team users
 - [ ] $1,500+ MRR
 - [ ] Average team size: 4+ users
 - [ ] 1+ case study published
+- [ ] 100% backward compatibility maintained (single-user deployments)
+- [ ] < 10% query performance overhead in multi-tenant mode
 
 ---
 

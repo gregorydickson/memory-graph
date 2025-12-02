@@ -99,7 +99,30 @@ class MemoryContext(BaseModel):
 
 
 class Memory(BaseModel):
-    """Core memory data structure."""
+    """Core memory data structure.
+
+    Represents a single memory entry in the system with metadata,
+    content, relationships, and tracking information.
+
+    Attributes:
+        id: Unique identifier for the memory (auto-generated if not provided)
+        type: Type of memory (task, solution, problem, etc.)
+        title: Short descriptive title (1-200 characters)
+        content: Main content of the memory (required)
+        summary: Optional brief summary (max 500 characters)
+        tags: List of lowercase tags for categorization
+        context: Optional context information (project, files, etc.)
+        importance: Importance score from 0.0 to 1.0 (default 0.5)
+        confidence: Confidence score from 0.0 to 1.0 (default 0.8)
+        effectiveness: Optional effectiveness rating (0.0 to 1.0)
+        usage_count: Number of times this memory has been accessed
+        created_at: Timestamp when memory was created
+        updated_at: Timestamp when memory was last updated
+        last_accessed: Timestamp when memory was last accessed (optional)
+        relationships: Enriched field with related memory IDs by type
+        match_info: Enriched field with search match information
+        context_summary: Enriched field with relationship context
+    """
 
     id: Optional[str] = None
     type: MemoryType
@@ -123,19 +146,48 @@ class Memory(BaseModel):
 
     @field_validator('tags')
     @classmethod
-    def validate_tags(cls, v):
-        """Ensure tags are lowercase and non-empty."""
+    def validate_tags(cls, v: List[str]) -> List[str]:
+        """Ensure tags are lowercase and non-empty.
+
+        Args:
+            v: List of tag strings to validate
+
+        Returns:
+            List of cleaned, lowercase, non-empty tags
+        """
         return [tag.lower().strip() for tag in v if tag.strip()]
 
     @field_validator('title', 'content')
     @classmethod
-    def validate_text_fields(cls, v):
-        """Ensure text fields are properly formatted."""
+    def validate_text_fields(cls, v: str) -> str:
+        """Ensure text fields are properly formatted.
+
+        Args:
+            v: Text field value to validate
+
+        Returns:
+            Stripped text field value
+        """
         return v.strip()
 
 
 class RelationshipProperties(BaseModel):
-    """Properties for relationships between memories."""
+    """Properties for relationships between memories.
+
+    Stores metadata about the relationship including strength,
+    confidence, validation history, and evidence tracking.
+
+    Attributes:
+        strength: Relationship strength from 0.0 to 1.0 (default 0.5)
+        confidence: Confidence in relationship from 0.0 to 1.0 (default 0.8)
+        context: Optional descriptive context for the relationship
+        evidence_count: Number of times this relationship has been validated
+        success_rate: Optional success rate (0.0 to 1.0)
+        created_at: Timestamp when relationship was created
+        last_validated: Timestamp when relationship was last validated
+        validation_count: Number of times this relationship has been validated
+        counter_evidence_count: Number of times counter-evidence was found
+    """
 
     strength: float = Field(default=0.5, ge=0.0, le=1.0)
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
@@ -149,7 +201,20 @@ class RelationshipProperties(BaseModel):
 
 
 class Relationship(BaseModel):
-    """Relationship between two memories."""
+    """Relationship between two memories.
+
+    Represents a directed relationship from one memory to another,
+    with a specific type and associated properties.
+
+    Attributes:
+        id: Unique identifier for the relationship (auto-generated)
+        from_memory_id: ID of the source memory
+        to_memory_id: ID of the target memory
+        type: Type of relationship (SOLVES, CAUSES, RELATES_TO, etc.)
+        properties: Relationship metadata and tracking information
+        description: Optional human-readable description
+        bidirectional: Whether the relationship is bidirectional (default False)
+    """
 
     id: Optional[str] = None
     from_memory_id: str
@@ -161,8 +226,18 @@ class Relationship(BaseModel):
 
     @field_validator('from_memory_id', 'to_memory_id')
     @classmethod
-    def validate_memory_ids(cls, v):
-        """Ensure memory IDs are non-empty."""
+    def validate_memory_ids(cls, v: str) -> str:
+        """Ensure memory IDs are non-empty.
+
+        Args:
+            v: Memory ID to validate
+
+        Returns:
+            Stripped memory ID
+
+        Raises:
+            ValueError: If memory ID is empty or whitespace
+        """
         if not v or not v.strip():
             raise ValueError('Memory ID cannot be empty')
         return v.strip()
@@ -176,7 +251,11 @@ class MemoryNode(BaseModel):
     labels: List[str] = Field(default_factory=list)
     
     def to_neo4j_properties(self) -> Dict[str, Any]:
-        """Convert memory to Neo4j node properties."""
+        """Convert memory to Neo4j node properties.
+
+        Returns:
+            Dictionary of property names to values suitable for Neo4j storage
+        """
         props = {
             'id': self.memory.id,
             'type': self.memory.type.value,
@@ -223,7 +302,30 @@ class MemoryNode(BaseModel):
 
 
 class SearchQuery(BaseModel):
-    """Search query parameters for memory retrieval."""
+    """Search query parameters for memory retrieval.
+
+    Supports various filtering options including text search, type filtering,
+    metadata filters, and search tolerance modes.
+
+    Attributes:
+        query: Text query for content search (optional)
+        terms: Multiple search terms for multi-term queries
+        memory_types: Filter by specific memory types
+        tags: Filter by tags
+        project_path: Filter by project path
+        languages: Filter by programming languages
+        frameworks: Filter by frameworks
+        min_importance: Minimum importance threshold (0.0-1.0)
+        min_confidence: Minimum confidence threshold (0.0-1.0)
+        min_effectiveness: Minimum effectiveness threshold (0.0-1.0)
+        created_after: Only include memories created after this datetime
+        created_before: Only include memories created before this datetime
+        limit: Maximum number of results (1-100, default 20)
+        include_relationships: Include relationship information in results
+        search_tolerance: Search mode - 'strict', 'normal', or 'fuzzy'
+        match_mode: Term matching mode - 'any' (OR) or 'all' (AND)
+        relationship_filter: Filter results by relationship types
+    """
 
     query: Optional[str] = None
     terms: List[str] = Field(default_factory=list, description="Multiple search terms for multi-term queries")
@@ -245,8 +347,18 @@ class SearchQuery(BaseModel):
 
     @field_validator('search_tolerance')
     @classmethod
-    def validate_search_tolerance(cls, v):
-        """Validate search_tolerance parameter."""
+    def validate_search_tolerance(cls, v: Optional[str]) -> str:
+        """Validate search_tolerance parameter.
+
+        Args:
+            v: Search tolerance value to validate
+
+        Returns:
+            Validated search tolerance value
+
+        Raises:
+            ValueError: If value is not 'strict', 'normal', or 'fuzzy'
+        """
         if v is None:
             return "normal"
         valid_values = ["strict", "normal", "fuzzy"]
@@ -256,8 +368,18 @@ class SearchQuery(BaseModel):
 
     @field_validator('match_mode')
     @classmethod
-    def validate_match_mode(cls, v):
-        """Validate match_mode parameter."""
+    def validate_match_mode(cls, v: Optional[str]) -> str:
+        """Validate match_mode parameter.
+
+        Args:
+            v: Match mode value to validate
+
+        Returns:
+            Validated match mode value
+
+        Raises:
+            ValueError: If value is not 'any' or 'all'
+        """
         if v is None:
             return "any"
         valid_values = ["any", "all"]
@@ -274,13 +396,27 @@ class MemoryGraph(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
     def get_memory_by_id(self, memory_id: str) -> Optional[Memory]:
-        """Get a memory by its ID."""
+        """Get a memory by its ID.
+
+        Args:
+            memory_id: Unique identifier of the memory to retrieve
+
+        Returns:
+            Memory object if found, None otherwise
+        """
         return next((m for m in self.memories if m.id == memory_id), None)
-    
+
     def get_relationships_for_memory(self, memory_id: str) -> List[Relationship]:
-        """Get all relationships involving a specific memory."""
+        """Get all relationships involving a specific memory.
+
+        Args:
+            memory_id: ID of the memory to find relationships for
+
+        Returns:
+            List of relationships where memory is source or target
+        """
         return [
-            r for r in self.relationships 
+            r for r in self.relationships
             if r.from_memory_id == memory_id or r.to_memory_id == memory_id
         ]
 
@@ -298,7 +434,15 @@ class AnalysisResult(BaseModel):
 # Custom Exception Hierarchy
 
 class MemoryError(Exception):
-    """Base exception for all memory-related errors."""
+    """Base exception for all memory-related errors.
+
+    All custom exceptions in the memory system inherit from this base class,
+    allowing for consistent error handling and categorization.
+
+    Attributes:
+        message: Human-readable error message
+        details: Optional dictionary with additional error context
+    """
 
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         """Initialize memory error.
@@ -319,7 +463,13 @@ class MemoryError(Exception):
 
 
 class MemoryNotFoundError(MemoryError):
-    """Raised when a requested memory does not exist."""
+    """Raised when a requested memory does not exist.
+
+    Attributes:
+        memory_id: ID of the memory that was not found
+        message: Error message with memory ID
+        details: Optional additional context
+    """
 
     def __init__(self, memory_id: str, details: Optional[Dict[str, Any]] = None):
         """Initialize memory not found error.
@@ -350,4 +500,19 @@ class DatabaseConnectionError(MemoryError):
 
 class SchemaError(MemoryError):
     """Raised when there's a schema-related issue."""
+    pass
+
+
+class NotFoundError(MemoryError):
+    """Alias for MemoryNotFoundError for consistency with workplan naming."""
+    pass
+
+
+class BackendError(MemoryError):
+    """Raised when there's a backend operation issue."""
+    pass
+
+
+class ConfigurationError(MemoryError):
+    """Raised when there's a configuration issue."""
     pass

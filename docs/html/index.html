@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryGraph - Memory for AI Coding Agents | Never Re-explain Your Project Again</title>
+    <meta name="description" content="Give Claude Code persistent memory. Store solutions, track what worked, recall context across sessions. Zero config, local-first, privacy by default. Install in 30 seconds.">
+    <meta property="og:title" content="MemoryGraph - Memory for AI Coding Agents">
+    <meta property="og:description" content="Never re-explain your project to Claude Code again. MemoryGraph remembers what worked.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="keywords" content="Claude Code memory, MCP memory server, AI coding assistant memory, Claude context persistence, Claude Code tools, persistent AI memory, developer tools, coding assistant">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Scanline overlay -->
+    <div class="scanlines"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">
+                <span class="logo-text">memorygraph<span class="cursor">_</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/">Docs</a>
+                <a href="https://github.com/gregorydickson/memory-graph">GitHub</a>
+                <a href="https://pypi.org/project/memorygraphMCP/">PyPI</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container">
+            <div class="ascii-art" aria-hidden="true">
+<pre>
+ _ __ ___   ___ _ __ ___   ___  _ __ _   _  __ _ _ __ __ _ _ __ | |__
+| '_ ` _ \ / _ \ '_ ` _ \ / _ \| '__| | | |/ _` | '__/ _` | '_ \| '_ \
+| | | | | |  __/ | | | | | (_) | |  | |_| | (_| | | | (_| | |_) | | | |
+|_| |_| |_|\___|_| |_| |_|\___/|_|   \__, |\__, |_|  \__,_| .__/|_| |_|
+                                     |___/ |___/          |_|
+</pre>
+            </div>
+            <p class="hero-tagline">&gt; MEMORY FOR YOUR AI CODING AGENT<span class="cursor">_</span></p>
+            <div class="hero-description">
+                <p><strong>Never re-explain your project again.</strong></p>
+                <p>Claude Code forgets everything between sessions. You explain your architecture, your patterns, what worked, what failed—and next session, it's gone.</p>
+                <p class="highlight-text">MemoryGraph fixes that.</p>
+            </div>
+
+            <div class="terminal-window">
+                <div class="terminal-header">
+                    <span class="terminal-dot"></span>
+                    <span class="terminal-dot"></span>
+                    <span class="terminal-dot"></span>
+                    <span class="terminal-title">terminal</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="terminal-line">
+                        <span class="prompt">$</span>
+                        <span class="command" id="cmd1">pipx install memorygraphMCP</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="prompt">$</span>
+                        <span class="command" id="cmd2">claude mcp add memorygraph -- memorygraph</span>
+                    </div>
+                    <div class="terminal-line success">
+                        <span class="prompt">✓</span>
+                        <span class="output">Ready. Your AI now has a memory.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-actions">
+                <a href="#quickstart" class="btn btn-primary glow">GET STARTED</a>
+                <a href="https://github.com/gregorydickson/memory-graph" class="btn btn-secondary">VIEW ON GITHUB</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Demo Section -->
+    <section class="demo">
+        <div class="container">
+            <h2 class="section-title">&gt; SEE IT IN ACTION<span class="cursor">_</span></h2>
+
+            <div class="terminal-window demo-terminal">
+                <div class="terminal-header">
+                    <span class="terminal-dot"></span>
+                    <span class="terminal-dot"></span>
+                    <span class="terminal-dot"></span>
+                    <span class="terminal-title">terminal</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="demo-session">
+                        <div class="session-label">SESSION 1:</div>
+                        <div class="demo-exchange">
+                            <div class="demo-line user">
+                                <span class="speaker">You:</span>
+                                "Remember: retry with exponential backoff fixed the API timeout issues"
+                            </div>
+                            <div class="demo-line agent">
+                                <span class="speaker">Claude:</span>
+                                <span class="success-text">✓ Stored in memory</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="demo-divider">─────────────────────────────────────────────</div>
+                    <div class="demo-session">
+                        <div class="session-label">SESSION 2 (days later):</div>
+                        <div class="demo-exchange">
+                            <div class="demo-line user">
+                                <span class="speaker">You:</span>
+                                "What fixed the timeout issues we had?"
+                            </div>
+                            <div class="demo-line agent">
+                                <span class="speaker">Claude:</span>
+                                "We fixed the API timeouts using exponential backoff retry logic. This solved both the connection timeouts and rate limiting issues."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem/Solution Section -->
+    <section class="problem-solution">
+        <div class="container">
+            <h2 class="section-title">&gt; THE PROBLEM<span class="cursor">_</span></h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-card bad">
+                    <div class="card-header">
+                        <span class="status-icon">✗</span>
+                        WITHOUT MEMORY
+                    </div>
+                    <div class="card-body">
+                        <div class="session">
+                            <span class="session-label">Session 1:</span>
+                            <span class="session-text">"Let me explain my project architecture..."</span>
+                        </div>
+                        <div class="session">
+                            <span class="session-label">Session 2:</span>
+                            <span class="session-text">"Let me explain my project architecture..."</span>
+                            <span class="session-note">(again)</span>
+                        </div>
+                        <div class="session">
+                            <span class="session-label">Session 3:</span>
+                            <span class="session-text">"Let me explain my project architecture..."</span>
+                            <span class="session-note">(seriously?)</span>
+                        </div>
+                        <div class="session">
+                            <span class="session-label">Session 47:</span>
+                            <span class="session-text italic">*quiet sobbing*</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-card good">
+                    <div class="card-header">
+                        <span class="status-icon">✓</span>
+                        WITH MEMORYGRAPH
+                    </div>
+                    <div class="card-body">
+                        <div class="session">
+                            <span class="session-label">Session 1:</span>
+                            <span class="session-text">"Remember this architecture..."</span>
+                            <span class="checkmark">✓ Stored</span>
+                        </div>
+                        <div class="session">
+                            <span class="session-label">Session 2:</span>
+                            <span class="session-text success-text">Claude already knows. You ship.</span>
+                        </div>
+                        <div class="session">
+                            <span class="session-label">Session 3:</span>
+                            <span class="session-text success-text">Claude recalls what worked AND what failed. You ship faster.</span>
+                        </div>
+                        <div class="session">
+                            <span class="session-label">Session 47:</span>
+                            <span class="session-text success-text">Claude knows your project better than you remember it yourself.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">&gt; FEATURES<span class="cursor">_</span></h2>
+
+            <div class="features-grid">
+                <div class="feature-window">
+                    <div class="window-header">
+                        <span class="window-title">PERSISTENT MEMORY</span>
+                        <div class="window-controls">
+                            <span class="window-btn">□</span>
+                            <span class="window-btn">×</span>
+                        </div>
+                    </div>
+                    <div class="window-body">
+                        <p>Store solutions, patterns, decisions, and learnings that survive across sessions. Never lose context to compaction again.</p>
+                        <div class="feature-examples">
+                            <code>&gt; "Remember: the auth bug was caused by token expiry"</code>
+                            <code>&gt; "Remember: we use repository pattern for data access"</code>
+                            <code>&gt; "Remember: pytest fixtures go in conftest.py"</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-window">
+                    <div class="window-header">
+                        <span class="window-title">KNOWS WHAT SOLVED WHAT</span>
+                        <div class="window-controls">
+                            <span class="window-btn">□</span>
+                            <span class="window-btn">×</span>
+                        </div>
+                    </div>
+                    <div class="window-body">
+                        <p>Not just notes—connected knowledge. MemoryGraph tracks relationships between problems, solutions, and patterns.</p>
+                        <div class="relationship-demo">
+                            <div class="rel-node">RetryBackoff</div>
+                            <div class="rel-arrow">──SOLVES──▶</div>
+                            <div class="rel-node">APITimeout</div>
+                        </div>
+                        <p class="feature-note">Ask "what solved the timeout?" and get the actual solution, not just text that mentions "timeout" somewhere.</p>
+                    </div>
+                </div>
+
+                <div class="feature-window">
+                    <div class="window-header">
+                        <span class="window-title">ZERO CONFIG</span>
+                        <div class="window-controls">
+                            <span class="window-btn">□</span>
+                            <span class="window-btn">×</span>
+                        </div>
+                    </div>
+                    <div class="window-body">
+                        <p>Works in 30 seconds. SQLite by default—no database to set up, no cloud account to create, no API keys to manage.</p>
+                        <div class="feature-examples">
+                            <code>$ pipx install memorygraphMCP</code>
+                            <code>$ claude mcp add memorygraph -- memorygraph</code>
+                            <code># That's it. You're done.</code>
+                        </div>
+                        <p class="feature-note">Your data stays on your machine. Works offline. Privacy by default.</p>
+                    </div>
+                </div>
+
+                <div class="feature-window">
+                    <div class="window-header">
+                        <span class="window-title">PROJECT AWARE</span>
+                        <div class="window-controls">
+                            <span class="window-btn">□</span>
+                            <span class="window-btn">×</span>
+                        </div>
+                    </div>
+                    <div class="window-body">
+                        <p>Organize memories by project. Switch contexts cleanly. What you learned on Project A doesn't pollute Project B.</p>
+                        <div class="project-tree">
+                            <div class="tree-item">
+                                <span class="tree-icon">&gt;</span>
+                                <span class="tree-name">Project: api-service</span>
+                                <span class="tree-count">└── 47 memories (auth, caching, deployment)</span>
+                            </div>
+                            <div class="tree-item">
+                                <span class="tree-icon">&gt;</span>
+                                <span class="tree-name">Project: data-pipeline</span>
+                                <span class="tree-count">└── 23 memories (ETL patterns, error handling)</span>
+                            </div>
+                            <div class="tree-item">
+                                <span class="tree-icon">&gt;</span>
+                                <span class="tree-name">Project: personal-site</span>
+                                <span class="tree-count">└── 12 memories (styling, deployment)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">&gt; HOW IT WORKS<span class="cursor">_</span></h2>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-header">
+                        <span class="step-number">01</span>
+                        <span class="step-title">STORE</span>
+                    </div>
+                    <div class="step-content">
+                        <p class="step-desc">Just talk naturally. Tell Claude what to remember.</p>
+                        <div class="step-input">
+                            <span class="prompt">&gt;</span>
+                            "Remember: exponential backoff fixed the API timeouts. Start at 100ms, max 5 retries, 2x multiplier."
+                        </div>
+                        <div class="step-arrow">↓</div>
+                        <div class="memory-node">
+                            <div>Entity: <span class="highlight">ExponentialBackoff</span></div>
+                            <div>Type: <span class="highlight">Solution</span></div>
+                            <div>Observations:</div>
+                            <div class="indent">- Start at 100ms delay</div>
+                            <div class="indent">- Maximum 5 retries</div>
+                            <div class="indent">- 2x multiplier between attempts</div>
+                            <div>Relationship: <span class="highlight">SOLVES → APITimeout</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-header">
+                        <span class="step-number">02</span>
+                        <span class="step-title">RECALL</span>
+                    </div>
+                    <div class="step-content">
+                        <p class="step-desc">Ask about past solutions. Claude searches your memory.</p>
+                        <div class="step-input">
+                            <span class="prompt">&gt;</span>
+                            "What fixed the timeout issues we had?"
+                        </div>
+                        <div class="step-arrow">↓</div>
+                        <div class="step-flow">
+                            Claude searches memory → Finds ExponentialBackoff → Sees it SOLVES APITimeout → Returns the full context
+                        </div>
+                        <div class="step-response">
+                            <span class="speaker">Claude:</span>
+                            "We fixed the API timeouts using exponential backoff. The configuration was: 100ms initial delay, max 5 retries, 2x multiplier between attempts."
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-header">
+                        <span class="step-number">03</span>
+                        <span class="step-title">BUILD ON IT</span>
+                    </div>
+                    <div class="step-content">
+                        <p class="step-desc">Knowledge compounds. Claude gets smarter about YOUR project.</p>
+                        <div class="timeline">
+                            <div class="timeline-item"><span class="week">Week 1:</span> Claude learns your architecture</div>
+                            <div class="timeline-item"><span class="week">Week 2:</span> Claude learns your patterns</div>
+                            <div class="timeline-item"><span class="week">Week 3:</span> Claude learns what works and what doesn't</div>
+                            <div class="timeline-item"><span class="week">Week 4:</span> Claude suggests solutions based on what worked before</div>
+                        </div>
+                        <p class="step-note">Your AI assistant evolves from "helpful stranger" to "team member who's been on the project for months."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparisons">
+        <div class="container">
+            <h2 class="section-title">&gt; VS THE ALTERNATIVES<span class="cursor">_</span></h2>
+
+            <div class="comparison-cards">
+                <div class="vs-card">
+                    <div class="vs-header">VS CLAUDE.md</div>
+                    <div class="vs-body">
+                        <p><strong>CLAUDE.md is great for static instructions:</strong><br>
+                        "Use pytest for testing. Follow PEP 8."</p>
+                        <p><strong>MemoryGraph is for dynamic learnings:</strong><br>
+                        "The caching bug was fixed by clearing Redis on deploy."<br>
+                        "The auth tokens expire after 1 hour, not 24."<br>
+                        "Don't use that library—it broke production last month."</p>
+                        <div class="vs-summary">
+                            <div>CLAUDE.md = what to do <span class="dim">(instructions)</span></div>
+                            <div>MemoryGraph = what we learned <span class="dim">(knowledge)</span></div>
+                        </div>
+                        <p class="vs-note">Use both. They complement each other.</p>
+                    </div>
+                </div>
+
+                <div class="vs-card">
+                    <div class="vs-header">VS BASIC-MEMORY</div>
+                    <div class="vs-body">
+                        <p><strong>basic-memory is excellent general-purpose PKM.</strong><br>
+                        Markdown files, Obsidian integration, cloud sync.</p>
+                        <p><strong>MemoryGraph is purpose-built for coding workflows:</strong></p>
+                        <ul>
+                            <li>Typed relationships (SOLVES, CAUSES, BLOCKED_BY)</li>
+                            <li>"What solved this?" not just "what mentions this?"</li>
+                            <li>Designed for how developers actually work</li>
+                        </ul>
+                        <div class="vs-summary">
+                            <div>basic-memory = "remember what I said"</div>
+                            <div>MemoryGraph = "remember what actually worked"</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vs-card">
+                    <div class="vs-header">VS ANTHROPIC'S BUILT-IN MEMORY</div>
+                    <div class="vs-body">
+                        <p><strong>Anthropic's memory is convenient—zero setup.</strong></p>
+                        <p><strong>MemoryGraph gives you:</strong></p>
+                        <ul>
+                            <li><span class="checkmark">✓</span> Control: See exactly what's stored</li>
+                            <li><span class="checkmark">✓</span> Portability: Export, backup, move your data</li>
+                            <li><span class="checkmark">✓</span> Privacy: Data never leaves your machine</li>
+                            <li><span class="checkmark">✓</span> Structure: Relationships, not just facts</li>
+                            <li><span class="checkmark">✓</span> Project separation: Clean context switching</li>
+                        </ul>
+                        <p class="vs-note">Your knowledge. Your machine. Your control.</p>
+                    </div>
+                </div>
+
+                <div class="vs-card">
+                    <div class="vs-header">VS DOING NOTHING</div>
+                    <div class="vs-body">
+                        <p><strong>The cost of no memory:</strong></p>
+                        <ul>
+                            <li>Re-explaining your architecture every session</li>
+                            <li>Re-discovering solutions you already found</li>
+                            <li>Re-making mistakes you already made</li>
+                            <li>Context lost every time the window fills up</li>
+                        </ul>
+                        <p class="highlight-text">Time spent re-explaining = time not shipping.</p>
+                        <p>MemoryGraph installs in 30 seconds.<br>
+                        <strong>How much time will you save this week?</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof Section -->
+    <section class="social-proof">
+        <div class="container">
+            <h2 class="section-title">&gt; WHAT DEVELOPERS ARE SAYING<span class="cursor">_</span></h2>
+
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span class="stat-icon">🧪</span>
+                    <span class="stat-text">409 Tests Passing</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">📊</span>
+                    <span class="stat-text">93% Test Coverage</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">📝</span>
+                    <span class="stat-text">MIT Licensed</span>
+                </div>
+            </div>
+
+            <div class="testimonials">
+                <div class="testimonial">
+                    <p class="testimonial-text">"Finally, Claude Code doesn't forget everything between sessions. This is what I've been waiting for."</p>
+                    <p class="testimonial-author">— Developer, GitHub</p>
+                </div>
+                <div class="testimonial">
+                    <p class="testimonial-text">"The relationship tracking is the killer feature. 'What solved X?' actually works."</p>
+                    <p class="testimonial-author">— Developer, Twitter</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq">
+        <div class="container">
+            <h2 class="section-title">&gt; FREQUENTLY ASKED QUESTIONS<span class="cursor">_</span></h2>
+
+            <div class="faq-list">
+                <details class="faq-item">
+                    <summary>&gt; How is my data stored?</summary>
+                    <div class="faq-answer">
+                        SQLite database on your local machine by default. Your data never leaves your computer unless you explicitly configure cloud sync (coming soon).
+                    </div>
+                </details>
+
+                <details class="faq-item">
+                    <summary>&gt; Does this work with Claude Desktop or just Claude Code?</summary>
+                    <div class="faq-answer">
+                        Works with any MCP-compatible client: Claude Code, Claude Desktop, Cursor, Windsurf, VS Code + Copilot, Continue.dev, Cline, and more.
+                    </div>
+                </details>
+
+                <details class="faq-item">
+                    <summary>&gt; Can I use this with multiple projects?</summary>
+                    <div class="faq-answer">
+                        Yes. MemoryGraph supports project-based organization. Each project has its own memory space.
+                    </div>
+                </details>
+
+                <details class="faq-item">
+                    <summary>&gt; What happens if I want to switch to a different tool later?</summary>
+                    <div class="faq-answer">
+                        Your data is yours. Export to JSON or Markdown anytime. No lock-in.
+                    </div>
+                </details>
+
+                <details class="faq-item">
+                    <summary>&gt; Is there a cloud/team version?</summary>
+                    <div class="faq-answer">
+                        Coming soon. The free local version will always exist. Cloud sync and team features will be paid tiers. Star the repo for updates.
+                    </div>
+                </details>
+
+                <details class="faq-item">
+                    <summary>&gt; How does this compare to RAG?</summary>
+                    <div class="faq-answer">
+                        RAG retrieves from static documents. MemoryGraph captures dynamic learnings from your conversations and tracks relationships between them. Different tools for different jobs.
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start Section -->
+    <section id="quickstart" class="quickstart">
+        <div class="container">
+            <h2 class="section-title">&gt; QUICK START<span class="cursor">_</span></h2>
+
+            <div class="install-tabs">
+                <button class="tab-btn active" data-tab="claude-code">Claude Code</button>
+                <button class="tab-btn" data-tab="cursor">Cursor</button>
+                <button class="tab-btn" data-tab="other">Other</button>
+            </div>
+
+            <div class="install-panels">
+                <div class="install-panel active" id="claude-code">
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-title">bash</span>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="terminal-line">
+                                <span class="comment"># 1. Install</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="prompt">$</span>
+                                <span class="command">pipx install memorygraphMCP</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="comment"># 2. Add to Claude Code</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="prompt">$</span>
+                                <span class="command">claude mcp add --scope user memorygraph -- memorygraph</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="comment"># 3. Restart Claude Code (exit and run 'claude' again)</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="comment"># 4. Verify</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="prompt">$</span>
+                                <span class="command">claude mcp list</span>
+                            </div>
+                            <div class="terminal-line success">
+                                <span class="output">memorygraph: Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="install-panel" id="cursor">
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-title">~/.cursor/mcp.json</span>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="terminal-line">
+                                <span class="comment"># 1. Install</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="prompt">$</span>
+                                <span class="command">pipx install memorygraphMCP</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="comment"># 2. Add to ~/.cursor/mcp.json</span>
+                            </div>
+                            <pre class="code-block">{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph"
+    }
+  }
+}</pre>
+                            <div class="terminal-line">
+                                <span class="comment"># 3. Restart Cursor</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="install-panel" id="other">
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-dot"></span>
+                            <span class="terminal-title">mcp.json</span>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="terminal-line">
+                                <span class="comment"># Generic MCP configuration</span>
+                            </div>
+                            <pre class="code-block">{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph",
+      "args": ["--profile", "extended"]
+    }
+  }
+}</pre>
+                            <div class="terminal-line">
+                                <span class="comment"># See docs for: Windsurf, VS Code, Continue, Cline, Gemini CLI</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-window">
+                <div class="window-header">
+                    <span class="window-title">READY?</span>
+                    <div class="window-controls">
+                        <span class="window-btn">□</span>
+                        <span class="window-btn">×</span>
+                    </div>
+                </div>
+                <div class="cta-content">
+                    <h2>&gt; READY TO GIVE YOUR AI A MEMORY?<span class="cursor">_</span></h2>
+                    <p class="cta-subtitle">Stop re-explaining. Start shipping.</p>
+
+                    <div class="cta-terminal">
+                        <div class="terminal-body">
+                            <div class="terminal-line">
+                                <span class="prompt">$</span>
+                                <span id="install-cmd">pipx install memorygraphMCP && claude mcp add memorygraph -- memorygraph</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="comment"># Try it now:</span>
+                            </div>
+                            <div class="terminal-line">
+                                <span class="comment"># "Remember: [something you learned today]"</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cta-actions">
+                        <button class="btn btn-primary" onclick="copyCommand()">
+                            <span id="copy-icon">📋</span> COPY INSTALL COMMAND
+                        </button>
+                        <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/" class="btn btn-secondary">READ THE DOCS</a>
+                    </div>
+
+                    <a href="https://github.com/gregorydickson/memory-graph" class="btn btn-star">
+                        ⭐ STAR ON GITHUB
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-divider">═══════════════════════════════════════════════════════════════</div>
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo-text">memorygraph<span class="cursor">_</span></span>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/gregorydickson/memory-graph">GitHub</a>
+                    <a href="https://pypi.org/project/memorygraphMCP/">PyPI</a>
+                    <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/">Documentation</a>
+                </div>
+                <div class="footer-meta">
+                    <p>MIT License · Made with <span class="heart">♥</span> for Claude Code users</p>
+                    <p class="copyright">© 2025 Gregory Dickson</p>
+                </div>
+            </div>
+            <div class="footer-divider">═══════════════════════════════════════════════════════════════</div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

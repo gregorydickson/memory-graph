@@ -1,6 +1,6 @@
 # MemoryGraph
 
-## MCP Memory Server for AI Coding Agents
+## Graph based MCP Memory Server for AI Coding Agents
 
 [![Tests](https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml/badge.svg)](https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/memorygraph)](https://pypi.org/project/memorygraph/)
@@ -17,10 +17,13 @@ A graph-based [Model Context Protocol (MCP)](https://modelcontextprotocol.io) se
 ### Claude Code CLI (30 seconds)
 
 ```bash
-# 1. Install
+# 1. Install (will use default SQLite database)
 pipx install memorygraphMCP
 
-# 2. Add to Claude Code
+# 1b. Optionally, you can specify a backend
+pipx install "memorygraphMCP[falkordblite]"
+
+# 2. Add to Claude Code (see docs/quickstart/ for other coding agents)
 claude mcp add --scope user memorygraph -- memorygraph
 
 # 3. Restart Claude Code (exit and run 'claude' again)
@@ -31,7 +34,7 @@ claude mcp add --scope user memorygraph -- memorygraph
 claude mcp list  # Should show memorygraph with "Connected"
 ```
 
-Then in Claude Code: *"Store this for later: Use pytest for Python testing"*
+Then in your coding agent you can ask it to remember important items: *"Remember this for later: Use pytest for Python testing"*
 
 ![Memory Creation](docs/images/memory-creation.jpg)
 
@@ -41,9 +44,9 @@ Then in Claude Code: *"Store this for later: Use pytest for Python testing"*
 >
 > **Command not found?** Run `pipx ensurepath` and restart your terminal.
 
-**Important:** MemoryGraph provides memory tools, but Claude won't use them automatically. You need to prompt Claude or configure it to store memories. See [Memory Best Practices](#memory-best-practices) below.
+**Important:** MemoryGraph provides memory tools, but your coding agent won't use them automatically. You need to prompt or configure it to store memories. See [Memory Best Practices](#memory-best-practices) below.
 
-**Quick setup:** Add this to your `~/.claude/CLAUDE.md` to enable automatic memory storage:
+**Quick setup:** Add this to your `~/.claude/CLAUDE.md` or `AGENTS.md` to enable automatic memory storage:
 ```markdown
 ## Memory Protocol
 After completing significant tasks, store a memory with:
@@ -80,13 +83,17 @@ See [MCP_CLIENT_COMPATIBILITY.md](docs/MCP_CLIENT_COMPATIBILITY.md) for detailed
 
 ### Graph Relationships Make the Difference
 
+Research shows that naive vector search degrades on long-horizon and temporal tasks. Benchmarks such as Deep Memory Retrieval (DMR) and LongMemEval were introduced precisely because graph-based systems excel at temporal queries ("what did the user decide last week"), cross-session reasoning, and multi-hop questions requiring explicit relational paths.
+
+Graph memory captures entities, relationships, and temporal markers that traditional vector stores miss. For example: `Alice COMPLETED authentication_service`, `Bob BLOCKED_BY schema_conflicts` with timeline information about when events occurred.
+
 **Flat storage** (CLAUDE.md, vector stores):
 ```
 Memory 1: "Fixed timeout by adding retry logic"
 Memory 2: "Retry logic caused memory leak"
 Memory 3: "Fixed memory leak with connection pooling"
 ```
-No connection between these - search finds them separately.
+No connection between these - search finds them separately. Best for static rules and prime directives.
 
 **Graph storage** (MemoryGraph):
 ```
@@ -102,7 +109,7 @@ Query: "What happened with retry logic?" → Returns the full causal chain.
 |-------------------|---------------------|
 | "Always use 2-space indentation" | "Last time we used 4-space, it broke the linter" |
 | "Run tests before committing" | "The auth tests failed because of X, fixed by Y" |
-| Static instructions | Dynamic learnings with relationships |
+| Static rules, prime directives | Dynamic learnings with relationships |
 
 ### Relationship Types
 
@@ -134,8 +141,28 @@ memorygraph                    # Core (default, 9 tools)
 memorygraph --profile extended # Extended (11 tools)
 ```
 
-**Core mode** provides all essential tools for daily use and works for 95% of users.
-**Extended mode** adds database statistics and complex relationship queries for power users.
+### Core Mode (Default)
+
+Provides all essential tools for daily use. Store memories, create relationships, search with fuzzy matching, and get session briefings. **This is all most users need.**
+
+### When to Use Extended Mode
+
+Switch to extended mode when you need:
+
+- **Database statistics** (`get_memory_statistics`) - See total memories, breakdown by type, average importance scores, and graph metrics. Useful for understanding how your knowledge base is growing.
+
+- **Complex relationship queries** (`search_relationships_by_context`) - Search relationships by structured context fields like scope, conditions, and evidence. Example: "Find all partial implementations" or "Show relationships with experimental evidence."
+
+**Common extended mode scenarios:**
+- Auditing your memory graph before a major refactor
+- Analyzing patterns across hundreds of memories
+- Finding all conditionally-applied solutions
+- Generating reports on project knowledge coverage
+
+```bash
+# Enable extended mode in Claude Code
+claude mcp add --scope user memorygraph -- memorygraph --profile extended
+```
 
 See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list and details.
 
