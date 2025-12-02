@@ -9,6 +9,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 
 from memorygraph.server import ClaudeMemoryServer
 from memorygraph.config import Config
+from memorygraph import tools
 
 
 class TestServerInitialization:
@@ -86,19 +87,17 @@ class TestServerInitialization:
             assert len(server.tools) == len(all_tools)
 
     def test_handler_registration(self):
-        """Test that MCP handlers are registered."""
-        server = ClaudeMemoryServer()
-
-        # Handlers should be registered during init
-        # Check that the server has the necessary handler methods
-        assert hasattr(server, '_handle_store_memory')
-        assert hasattr(server, '_handle_get_memory')
-        assert hasattr(server, '_handle_search_memories')
-        assert hasattr(server, '_handle_update_memory')
-        assert hasattr(server, '_handle_delete_memory')
-        assert hasattr(server, '_handle_create_relationship')
-        assert hasattr(server, '_handle_get_related_memories')
-        assert hasattr(server, '_handle_get_memory_statistics')
+        """Test that MCP handlers are available in tools module."""
+        # Handlers have been extracted to tools module
+        # Check that the handlers are available as module functions
+        assert hasattr(tools, 'handle_store_memory')
+        assert hasattr(tools, 'handle_get_memory')
+        assert hasattr(tools, 'handle_search_memories')
+        assert hasattr(tools, 'handle_update_memory')
+        assert hasattr(tools, 'handle_delete_memory')
+        assert hasattr(tools, 'handle_create_relationship')
+        assert hasattr(tools, 'handle_get_related_memories')
+        assert hasattr(tools, 'handle_get_memory_statistics')
 
     @pytest.mark.asyncio
     async def test_initialize_server(self):

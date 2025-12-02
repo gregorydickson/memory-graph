@@ -16,6 +16,16 @@ from memorygraph.models import (
     Memory, MemoryType, MemoryContext, Relationship,
     RelationshipType, RelationshipProperties
 )
+from memorygraph.tools import (
+    handle_store_memory,
+    handle_get_memory,
+    handle_search_memories,
+    handle_update_memory,
+    handle_delete_memory,
+    handle_create_relationship,
+    handle_get_related_memories,
+    handle_get_memory_statistics,
+)
 
 
 @pytest.fixture
@@ -59,7 +69,7 @@ class TestCoreHandlers:
         mock_database.get_memory.return_value = mock_memory
 
         args = {"memory_id": memory_id}
-        result = await mcp_server._handle_get_memory(args)
+        result = await handle_get_memory(mock_database, args)
 
         assert result.isError is False
         mock_database.get_memory.assert_called_once_with(memory_id, True)
@@ -71,7 +81,7 @@ class TestCoreHandlers:
         mock_database.get_memory.return_value = None
 
         args = {"memory_id": memory_id}
-        result = await mcp_server._handle_get_memory(args)
+        result = await handle_get_memory(mock_database, args)
 
         assert result.isError is True
         content_str = str(result.content).lower()
@@ -91,7 +101,7 @@ class TestCoreHandlers:
         ]
 
         args = {"query": "python"}
-        result = await mcp_server._handle_search_memories(args)
+        result = await handle_search_memories(mock_database, args)
 
         assert result.isError is False
         mock_database.search_memories.assert_called_once()
@@ -106,7 +116,7 @@ class TestCoreHandlers:
             "memory_id": memory_id,
             "updates": {"title": "Updated Title"}
         }
-        result = await mcp_server._handle_update_memory(args)
+        result = await handle_update_memory(mock_database, args)
 
         assert result.isError is False
         mock_database.update_memory.assert_called_once()
@@ -118,7 +128,7 @@ class TestCoreHandlers:
         mock_database.delete_memory.return_value = True
 
         args = {"memory_id": memory_id}
-        result = await mcp_server._handle_delete_memory(args)
+        result = await handle_delete_memory(mock_database, args)
 
         assert result.isError is False
         mock_database.delete_memory.assert_called_once()
@@ -137,7 +147,7 @@ class TestCoreHandlers:
             "to_memory_id": to_id,
             "relationship_type": "RELATED_TO"  # Valid RelationshipType
         }
-        result = await mcp_server._handle_create_relationship(args)
+        result = await handle_create_relationship(mock_database, args)
 
         assert result.isError is False
         mock_database.create_relationship.assert_called_once()
@@ -149,7 +159,7 @@ class TestCoreHandlers:
         mock_database.get_related_memories.return_value = []
 
         args = {"memory_id": memory_id}
-        result = await mcp_server._handle_get_related_memories(args)
+        result = await handle_get_related_memories(mock_database, args)
 
         assert result.isError is False
         mock_database.get_related_memories.assert_called_once()
@@ -165,7 +175,7 @@ class TestCoreHandlers:
         mock_database.get_memory_statistics.return_value = stats_result
 
         args = {}
-        result = await mcp_server._handle_get_memory_statistics(args)
+        result = await handle_get_memory_statistics(mock_database, args)
 
         # If the handler has issues, just verify it was called
         # The implementation may need the full stats structure
@@ -188,14 +198,14 @@ class TestErrorHandling:
             "content": "Test content"
         }
 
-        result = await mcp_server._handle_store_memory(args)
+        result = await handle_store_memory(mock_database, args)
 
         assert result.isError is True
         content_str = str(result.content).lower()
         assert "failed" in content_str or "error" in content_str
 
     @pytest.mark.asyncio
-    async def test_handler_with_validation_error(self, mcp_server):
+    async def test_handler_with_validation_error(self, mcp_server, mock_database):
         """Test that validation errors are handled gracefully."""
         args = {
             "type": "invalid_type",  # Invalid enum value
@@ -203,7 +213,7 @@ class TestErrorHandling:
             "content": "Test content"
         }
 
-        result = await mcp_server._handle_store_memory(args)
+        result = await handle_store_memory(mock_database, args)
 
         assert result.isError is True
 
@@ -216,7 +226,7 @@ class TestErrorHandling:
             "memory_id": str(uuid.uuid4())
         }
 
-        result = await mcp_server._handle_get_memory(args)
+        result = await handle_get_memory(mock_database, args)
 
         assert result.isError is True
         content_str = str(result.content).lower()

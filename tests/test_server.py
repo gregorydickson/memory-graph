@@ -20,6 +20,16 @@ from memorygraph.models import (
     RelationshipType, RelationshipProperties, SearchQuery,
     MemoryNotFoundError, ValidationError
 )
+from memorygraph.tools import (
+    handle_store_memory,
+    handle_get_memory,
+    handle_search_memories,
+    handle_update_memory,
+    handle_delete_memory,
+    handle_create_relationship,
+    handle_get_related_memories,
+    handle_get_memory_statistics,
+)
 
 
 @pytest.fixture
@@ -73,24 +83,24 @@ class TestStoreMemory:
         memory_id = str(uuid.uuid4())
         mock_database.store_memory.return_value = memory_id
 
-        result = await mcp_server._handle_store_memory(sample_memory_args)
+        result = await handle_store_memory(mock_database, sample_memory_args)
 
         assert result.isError is False
         assert memory_id in str(result.content)
         mock_database.store_memory.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_store_memory_missing_required_fields(self, mcp_server):
+    async def test_store_memory_missing_required_fields(self, mcp_server, mock_database):
         """Test store_memory with missing required fields."""
         args = {"title": "Test"}  # Missing type and content
 
-        result = await mcp_server._handle_store_memory(args)
+        result = await handle_store_memory(mock_database, args)
 
         assert result.isError is True
         assert "error" in str(result.content).lower()
 
     @pytest.mark.asyncio
-    async def test_store_memory_invalid_type(self, mcp_server):
+    async def test_store_memory_invalid_type(self, mcp_server, mock_database):
         """Test store_memory with invalid memory type."""
         args = {
             "type": "invalid_type",
@@ -98,7 +108,7 @@ class TestStoreMemory:
             "content": "Test content"
         }
 
-        result = await mcp_server._handle_store_memory(args)
+        result = await handle_store_memory(mock_database, args)
 
         assert result.isError is True
 
@@ -118,7 +128,7 @@ class TestGetMemory:
         )
         mock_database.get_memory.return_value = mock_memory
 
-        result = await mcp_server._handle_get_memory({"memory_id": memory_id})
+        result = await handle_get_memory(mock_database, {"memory_id": memory_id})
 
         assert result.isError is False
         assert "Test Solution" in str(result.content)
@@ -131,7 +141,7 @@ class TestGetMemory:
         memory_id = str(uuid.uuid4())
         mock_database.get_memory.return_value = None
 
-        result = await mcp_server._handle_get_memory({"memory_id": memory_id})
+        result = await handle_get_memory(mock_database, {"memory_id": memory_id})
 
         assert result.isError is True
         assert "not found" in str(result.content).lower()
@@ -139,7 +149,7 @@ class TestGetMemory:
     @pytest.mark.asyncio
     async def test_get_memory_missing_id(self, mcp_server):
         """Test get_memory without providing ID."""
-        result = await mcp_server._handle_get_memory({})
+        result = await handle_get_memory(mock_database, {})
 
         assert result.isError is True
 
@@ -171,7 +181,7 @@ class TestSearchMemories:
             "memory_types": ["solution", "problem"],
             "limit": 10
         }
-        result = await mcp_server._handle_search_memories(args)
+        result = await handle_search_memories(mock_database, args)
 
         assert result.isError is False
         assert "Test 1" in str(result.content) or "found" in str(result.content).lower()
@@ -181,7 +191,7 @@ class TestSearchMemories:
         """Test search with no results."""
         mock_database.search_memories.return_value = []
 
-        result = await mcp_server._handle_search_memories({"query": "nonexistent"})
+        result = await handle_search_memories(mock_database, {"query": "nonexistent"})
 
         assert result.isError is False
         assert "0" in str(result.content) or "no" in str(result.content).lower()
@@ -201,7 +211,7 @@ class TestUpdateMemory:
             "title": "Updated Title",
             "content": "Updated content"
         }
-        result = await mcp_server._handle_update_memory(args)
+        result = await handle_update_memory(mock_database, args)
 
         assert result.isError is False
         assert "updated" in str(result.content).lower()
@@ -216,7 +226,7 @@ class TestUpdateMemory:
             "memory_id": memory_id,
             "title": "Updated Title"
         }
-        result = await mcp_server._handle_update_memory(args)
+        result = await handle_update_memory(mock_database, args)
 
         assert result.isError is True
 
@@ -230,7 +240,7 @@ class TestDeleteMemory:
         memory_id = str(uuid.uuid4())
         mock_database.delete_memory.return_value = True
 
-        result = await mcp_server._handle_delete_memory({"memory_id": memory_id})
+        result = await handle_delete_memory(mock_database, {"memory_id": memory_id})
 
         assert result.isError is False
         assert "deleted" in str(result.content).lower()
@@ -241,7 +251,7 @@ class TestDeleteMemory:
         memory_id = str(uuid.uuid4())
         mock_database.delete_memory.return_value = False
 
-        result = await mcp_server._handle_delete_memory({"memory_id": memory_id})
+        result = await handle_delete_memory(mock_database, {"memory_id": memory_id})
 
         assert result.isError is True
 
@@ -265,7 +275,7 @@ class TestCreateRelationship:
             "relationship_type": "SOLVES",
             "strength": 0.9
         }
-        result = await mcp_server._handle_create_relationship(args)
+        result = await handle_create_relationship(mock_database, args)
 
         assert result.isError is False
         assert "relationship" in str(result.content).lower()
@@ -276,7 +286,7 @@ class TestCreateRelationship:
         """Test create_relationship with missing IDs."""
         args = {"relationship_type": "SOLVES"}
 
-        result = await mcp_server._handle_create_relationship(args)
+        result = await handle_create_relationship(mock_database, args)
 
         assert result.isError is True
 
@@ -309,7 +319,7 @@ class TestGetRelatedMemories:
             "relationship_types": ["SOLVES"],
             "max_depth": 2
         }
-        result = await mcp_server._handle_get_related_memories(args)
+        result = await handle_get_related_memories(mock_database, args)
 
         assert result.isError is False
         assert "Related Problem" in str(result.content)
@@ -320,7 +330,7 @@ class TestGetRelatedMemories:
         memory_id = str(uuid.uuid4())
         mock_database.get_related_memories.return_value = []
 
-        result = await mcp_server._handle_get_related_memories({"memory_id": memory_id})
+        result = await handle_get_related_memories(mock_database, {"memory_id": memory_id})
 
         assert result.isError is False
 
@@ -341,7 +351,7 @@ class TestGetMemoryStatistics:
         }
         mock_database.get_memory_statistics.return_value = mock_stats
 
-        result = await mcp_server._handle_get_memory_statistics({})
+        result = await handle_get_memory_statistics(mock_database, {})
 
         assert result.isError is False
         assert "100" in str(result.content) or "total" in str(result.content).lower()
@@ -362,7 +372,7 @@ class TestErrorHandling:
             "title": "Test",
             "content": "Test content"
         }
-        result = await mcp_server._handle_store_memory(args)
+        result = await handle_store_memory(mock_database, args)
 
         assert result.isError is True
         assert "error" in str(result.content).lower()
@@ -377,7 +387,7 @@ class TestErrorHandling:
             "title": "Test",
             "content": "Test content"
         }
-        result = await mcp_server._handle_store_memory(args)
+        result = await handle_store_memory(mock_database, args)
 
         assert result.isError is True
 
