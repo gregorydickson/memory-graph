@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryGraph - Persistent Memory for AI Coding Agents</title>
+    <meta name="description" content="Graph-based MCP memory server that gives AI coding agents persistent memory. Store patterns, track relationships, retrieve knowledge across sessions.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">
+                <span class="logo-icon">&#9670;</span>
+                MemoryGraph
+            </a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#quickstart">Quick Start</a>
+                <a href="#clients">Clients</a>
+                <a href="https://github.com/gregorydickson/memory-graph" class="btn btn-outline">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badge">MCP Server for AI Coding Agents</div>
+                <h1>Give Your AI Agent <span class="highlight">Persistent Memory</span></h1>
+                <p class="hero-description">
+                    A graph-based memory server that lets AI coding agents store patterns,
+                    track relationships, and retrieve knowledge across sessions.
+                    Zero-config setup with SQLite, or scale to Neo4j.
+                </p>
+                <div class="hero-actions">
+                    <a href="#quickstart" class="btn btn-primary">Get Started</a>
+                    <a href="https://github.com/gregorydickson/memory-graph" class="btn btn-secondary">View on GitHub</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-value">5</span>
+                        <span class="stat-label">Backends</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">7+</span>
+                        <span class="stat-label">MCP Clients</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">93%</span>
+                        <span class="stat-label">Test Coverage</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="graph-demo">
+                    <div class="node node-problem">timeout_fix</div>
+                    <div class="edge edge-1">CAUSES</div>
+                    <div class="node node-error">memory_leak</div>
+                    <div class="edge edge-2">SOLVED_BY</div>
+                    <div class="node node-solution">connection_pooling</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Why Graph-Based Memory?</h2>
+            <p class="section-subtitle">Traditional flat storage loses context. MemoryGraph preserves relationships.</p>
+
+            <div class="comparison">
+                <div class="comparison-item comparison-bad">
+                    <h3>Flat Storage</h3>
+                    <div class="code-block">
+                        <code>Memory 1: "Fixed timeout with retry"</code>
+                        <code>Memory 2: "Retry caused memory leak"</code>
+                        <code>Memory 3: "Fixed leak with pooling"</code>
+                    </div>
+                    <p class="comparison-note">No connection - search finds them separately</p>
+                </div>
+                <div class="comparison-item comparison-good">
+                    <h3>Graph Storage</h3>
+                    <div class="graph-visual">
+                        <span class="gv-node">[timeout_fix]</span>
+                        <span class="gv-arrow">--CAUSES--&gt;</span>
+                        <span class="gv-node">[memory_leak]</span>
+                        <span class="gv-arrow">--SOLVED_BY--&gt;</span>
+                        <span class="gv-node">[pooling]</span>
+                    </div>
+                    <p class="comparison-note">Query returns the full causal chain</p>
+                </div>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#128279;</div>
+                    <h3>35 Relationship Types</h3>
+                    <p>Track causation, solutions, dependencies, and more.
+                       CAUSES, SOLVES, REQUIRES, IMPROVES, BLOCKS...</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128269;</div>
+                    <h3>Smart Recall</h3>
+                    <p>Fuzzy matching handles plurals, tenses, and variations.
+                       Find what you need with natural language queries.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9881;</div>
+                    <h3>Zero Config</h3>
+                    <p>Works out of the box with SQLite.
+                       No database setup, no credentials, just install and go.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128640;</div>
+                    <h3>Scale When Ready</h3>
+                    <p>Start with SQLite, upgrade to FalkorDB or Neo4j
+                       when you need production performance.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart" class="quickstart">
+        <div class="container">
+            <h2 class="section-title">Quick Start</h2>
+            <p class="section-subtitle">Up and running in 30 seconds</p>
+
+            <div class="install-tabs">
+                <button class="tab-btn active" data-tab="claude">Claude Code</button>
+                <button class="tab-btn" data-tab="cursor">Cursor</button>
+                <button class="tab-btn" data-tab="other">Other Clients</button>
+            </div>
+
+            <div class="install-content">
+                <div class="tab-content active" id="claude">
+                    <div class="code-block terminal">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                        </div>
+                        <pre><code><span class="comment"># 1. Install</span>
+pipx install memorygraphMCP
+
+<span class="comment"># 2. Add to Claude Code</span>
+claude mcp add --scope user memorygraph -- memorygraph
+
+<span class="comment"># 3. Restart Claude Code</span>
+<span class="comment"># Exit and run 'claude' again</span>
+
+<span class="comment"># 4. Verify</span>
+claude mcp list  <span class="comment"># Should show "Connected"</span></code></pre>
+                    </div>
+                </div>
+                <div class="tab-content" id="cursor">
+                    <div class="code-block terminal">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                        </div>
+                        <pre><code><span class="comment"># 1. Install</span>
+pipx install memorygraphMCP
+
+<span class="comment"># 2. Add to ~/.cursor/mcp.json</span>
+{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph"
+    }
+  }
+}
+
+<span class="comment"># 3. Restart Cursor</span></code></pre>
+                    </div>
+                </div>
+                <div class="tab-content" id="other">
+                    <div class="code-block terminal">
+                        <div class="terminal-header">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                        </div>
+                        <pre><code><span class="comment"># Generic MCP configuration</span>
+{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph",
+      "args": ["--profile", "extended"]
+    }
+  }
+}
+
+<span class="comment"># See docs for specific clients:</span>
+<span class="comment"># Windsurf, VS Code, Continue, Cline, Gemini CLI</span></code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="usage-example">
+                <h3>Then in your AI agent:</h3>
+                <div class="chat-example">
+                    <div class="chat-message user">
+                        <span class="chat-label">You:</span>
+                        <span class="chat-text">"Remember this for later: Use bcrypt for password hashing in this project"</span>
+                    </div>
+                    <div class="chat-message agent">
+                        <span class="chat-label">Agent:</span>
+                        <span class="chat-text">Stored memory with tags [security, authentication, bcrypt]</span>
+                    </div>
+                    <div class="chat-message user">
+                        <span class="chat-label">You:</span>
+                        <span class="chat-text">"What do we use for password hashing?"</span>
+                    </div>
+                    <div class="chat-message agent">
+                        <span class="chat-label">Agent:</span>
+                        <span class="chat-text">Based on stored memory: Use bcrypt for password hashing...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="clients" class="clients">
+        <div class="container">
+            <h2 class="section-title">Supported MCP Clients</h2>
+            <p class="section-subtitle">Works with any MCP-compliant AI coding tool</p>
+
+            <div class="clients-grid">
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/CLAUDE_CODE_SETUP.md" class="client-card">
+                    <div class="client-name">Claude Code</div>
+                    <div class="client-type">CLI / IDE</div>
+                </a>
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/quickstart/CURSOR_SETUP.md" class="client-card">
+                    <div class="client-name">Cursor AI</div>
+                    <div class="client-type">IDE</div>
+                </a>
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/quickstart/WINDSURF_SETUP.md" class="client-card">
+                    <div class="client-name">Windsurf</div>
+                    <div class="client-type">IDE</div>
+                </a>
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/quickstart/VSCODE_COPILOT_SETUP.md" class="client-card">
+                    <div class="client-name">VS Code + Copilot</div>
+                    <div class="client-type">IDE (1.102+)</div>
+                </a>
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/quickstart/CONTINUE_SETUP.md" class="client-card">
+                    <div class="client-name">Continue.dev</div>
+                    <div class="client-type">VS Code / JetBrains</div>
+                </a>
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/quickstart/CLINE_SETUP.md" class="client-card">
+                    <div class="client-name">Cline</div>
+                    <div class="client-type">VS Code</div>
+                </a>
+                <a href="https://github.com/gregorydickson/memory-graph/blob/main/docs/quickstart/GEMINI_CLI_SETUP.md" class="client-card">
+                    <div class="client-name">Gemini CLI</div>
+                    <div class="client-type">CLI</div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="backends">
+        <div class="container">
+            <h2 class="section-title">Choose Your Backend</h2>
+            <p class="section-subtitle">Start simple, scale when ready</p>
+
+            <div class="backends-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Backend</th>
+                            <th>Type</th>
+                            <th>Native Graph</th>
+                            <th>Zero-Config</th>
+                            <th>Best For</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>SQLite</strong></td>
+                            <td>Embedded</td>
+                            <td>Simulated</td>
+                            <td>&#10003;</td>
+                            <td>Default, simple use</td>
+                        </tr>
+                        <tr>
+                            <td><strong>FalkorDBLite</strong></td>
+                            <td>Embedded</td>
+                            <td>Cypher</td>
+                            <td>&#10003;</td>
+                            <td>Graph queries without server</td>
+                        </tr>
+                        <tr>
+                            <td><strong>FalkorDB</strong></td>
+                            <td>Client-server</td>
+                            <td>Cypher</td>
+                            <td></td>
+                            <td>High-performance production</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Neo4j</strong></td>
+                            <td>Client-server</td>
+                            <td>Cypher</td>
+                            <td></td>
+                            <td>Enterprise features</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Memgraph</strong></td>
+                            <td>Client-server</td>
+                            <td>Cypher</td>
+                            <td></td>
+                            <td>Real-time analytics</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to give your AI agent memory?</h2>
+            <p>Start with zero config, upgrade when you need it.</p>
+            <div class="cta-actions">
+                <a href="https://pypi.org/project/memorygraphMCP/" class="btn btn-primary">Install from PyPI</a>
+                <a href="https://github.com/gregorydickson/memory-graph" class="btn btn-secondary">View Documentation</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="logo-icon">&#9670;</span>
+                    <span>MemoryGraph</span>
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/gregorydickson/memory-graph">GitHub</a>
+                    <a href="https://pypi.org/project/memorygraphMCP/">PyPI</a>
+                    <a href="https://github.com/gregorydickson/memory-graph/issues">Issues</a>
+                    <a href="https://github.com/gregorydickson/memory-graph/discussions">Discussions</a>
+                </div>
+                <div class="footer-meta">
+                    <p>MIT License</p>
+                    <p>Made for the Claude Code community</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
