@@ -13,7 +13,7 @@ import pytest
 import json
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 
 from memorygraph.cli import perform_health_check
 from memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
@@ -137,7 +137,7 @@ class TestHealthCheckOutput:
         assert timestamp is not None
 
         # Should be recent (within last minute)
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         time_diff = abs((now - timestamp).total_seconds())
         assert time_diff < 60  # Within 60 seconds
 

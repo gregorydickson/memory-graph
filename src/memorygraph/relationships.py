@@ -9,7 +9,7 @@ Phase 4 Implementation - Advanced Relationship System
 
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Set, Any
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 import logging
 
@@ -564,7 +564,7 @@ class RelationshipManager:
             evidence_count=new_evidence,
             success_rate=new_success_rate,
             created_at=properties.created_at,
-            last_validated=datetime.now(UTC),
+            last_validated=datetime.now(timezone.utc),
             validation_count=new_validation,
             counter_evidence_count=new_counter
         )

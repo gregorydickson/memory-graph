@@ -9,7 +9,7 @@ Tests cover:
 """
 
 import pytest
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 
 from src.memorygraph.sqlite_database import SQLiteMemoryDatabase
 from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend

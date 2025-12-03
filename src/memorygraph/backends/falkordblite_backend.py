@@ -26,7 +26,7 @@ from ..models import (
     ValidationError,
     RelationshipError,
 )
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 import uuid
 import json
 
@@ -205,7 +205,7 @@ class FalkorDBLiteBackend(GraphBackend):
             if not memory.id:
                 memory.id = str(uuid.uuid4())
 
-            memory.updated_at = datetime.now(UTC)
+            memory.updated_at = datetime.now(timezone.utc)
 
             # Convert memory to properties
             memory_node = MemoryNode(memory=memory)
@@ -359,7 +359,7 @@ class FalkorDBLiteBackend(GraphBackend):
             if not memory.id:
                 raise ValidationError("Memory must have an ID to update")
 
-            memory.updated_at = datetime.now(UTC)
+            memory.updated_at = datetime.now(timezone.utc)
 
             # Convert memory to properties
             memory_node = MemoryNode(memory=memory)

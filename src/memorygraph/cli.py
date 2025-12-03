@@ -10,7 +10,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional
 
 from . import __version__
@@ -115,7 +115,7 @@ async def perform_health_check(timeout: float = 5.0) -> dict:
         "status": "unhealthy",
         "connected": False,
         "backend_type": "unknown",
-        "timestamp": datetime.now(UTC).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
     try:
