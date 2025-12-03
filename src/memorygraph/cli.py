@@ -280,6 +280,24 @@ def print_config_summary() -> None:
     if config['backend'] in ['sqlite', 'auto']:
         print(f"\n  SQLite Path: {config['sqlite']['path']}")
 
+    if config['backend'] in ['turso', 'auto']:
+        print(f"\n  Turso URL: {config['turso']['database_url'] or '✗ Not set'}")
+        print(f"  Turso Token: {'✓ Configured' if config['turso']['auth_token_configured'] else '✗ Not set'}")
+        print(f"  Turso Local Path: {config['turso']['path']}")
+
+    if config['backend'] in ['cloud', 'auto']:
+        print(f"\n  Cloud API URL: {config['cloud']['api_url']}")
+        print(f"  Cloud API Key: {'✓ Configured' if config['cloud']['api_key_configured'] else '✗ Not set'}")
+        print(f"  Cloud Timeout: {config['cloud']['timeout']}s")
+
+    if config['backend'] in ['falkordb', 'auto']:
+        print(f"\n  FalkorDB: Client-server mode")
+        print(f"  Note: Configuration via MEMORY_FALKORDB_* environment variables")
+
+    if config['backend'] in ['falkordblite', 'auto']:
+        print(f"\n  FalkorDBLite: Embedded database")
+        print(f"  Note: Configuration via MEMORY_FALKORDBLITE_PATH environment variable")
+
     print()
 
 
@@ -330,7 +348,7 @@ Examples:
   memorygraph --health
 
 Environment Variables:
-  MEMORY_BACKEND         Backend type (sqlite|neo4j|memgraph|auto) [default: sqlite]
+  MEMORY_BACKEND         Backend type (sqlite|neo4j|memgraph|falkordb|falkordblite|turso|cloud|auto) [default: sqlite]
   MEMORY_TOOL_PROFILE    Tool profile (core|extended) [default: core]
   MEMORY_SQLITE_PATH     SQLite database path [default: ~/.memorygraph/memory.db]
   MEMORY_LOG_LEVEL       Log level (DEBUG|INFO|WARNING|ERROR) [default: INFO]
@@ -342,6 +360,23 @@ Environment Variables:
 
   Memgraph Configuration:
     MEMORY_MEMGRAPH_URI    Connection URI [default: bolt://localhost:7687]
+
+  FalkorDB Configuration:
+    MEMORY_FALKORDB_HOST   FalkorDB host [default: localhost]
+    MEMORY_FALKORDB_PORT   FalkorDB port [default: 6379]
+    MEMORY_FALKORDB_PASSWORD  Password (if required)
+
+  FalkorDBLite Configuration:
+    MEMORY_FALKORDBLITE_PATH  Database path [default: ~/.memorygraph/falkordblite.db]
+
+  Turso Configuration:
+    MEMORY_TURSO_URL       Turso database URL (required for turso backend)
+    MEMORY_TURSO_AUTH_TOKEN  Turso authentication token (required for turso backend)
+
+  Cloud Configuration:
+    MEMORYGRAPH_API_KEY    API key for MemoryGraph Cloud (required for cloud backend)
+    MEMORYGRAPH_API_URL    Cloud API URL [default: https://graph-api.memorygraph.dev]
+    MEMORYGRAPH_TIMEOUT    Request timeout in seconds [default: 30]
         """
     )
 
@@ -354,7 +389,7 @@ Environment Variables:
     parser.add_argument(
         "--backend",
         type=str,
-        choices=["sqlite", "neo4j", "memgraph", "auto"],
+        choices=["sqlite", "neo4j", "memgraph", "falkordb", "falkordblite", "turso", "cloud", "auto"],
         help="Database backend to use (overrides MEMORY_BACKEND env var)"
     )
 

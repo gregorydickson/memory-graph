@@ -253,14 +253,129 @@ pip install "memorygraphMCP[falkordb]"
 python -c "import falkordb; print('FalkorDB client installed')"
 ```
 
+### Cloud Backend issues
+
+**Authentication error (401 Unauthorized)**:
+```bash
+# Error: Authentication failed: 401 Unauthorized
+# Cause: Missing or invalid API key
+
+# Solution 1: Set API key in environment
+export MEMORYGRAPH_API_KEY="your-api-key-here"
+
+# Solution 2: Add to MCP config
+claude mcp add memorygraph \
+  --env MEMORYGRAPH_API_KEY="your-api-key-here" \
+  -- memorygraph --backend cloud
+
+# Verify configuration
+memorygraph --show-config | grep MEMORYGRAPH
+```
+
+**API key not set**:
+```bash
+# Error: MEMORYGRAPH_API_KEY environment variable is required for cloud backend
+
+# Get API key from https://memorygraph.dev (coming soon)
+# Then set it:
+export MEMORYGRAPH_API_KEY="your-api-key-here"
+
+# Or add to your shell profile
+echo 'export MEMORYGRAPH_API_KEY="your-api-key-here"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Connection timeout**:
+```bash
+# Error: Request timeout after 30 seconds
+# Cause: Network issues or API server unavailable
+
+# Solution 1: Check network connectivity
+curl -I https://graph-api.memorygraph.dev/health
+
+# Solution 2: Increase timeout
+export MEMORYGRAPH_TIMEOUT=60  # seconds
+memorygraph --backend cloud --health
+
+# Solution 3: Check API status page
+# Visit https://status.memorygraph.dev (coming soon)
+```
+
+**Rate limiting (429 Too Many Requests)**:
+```bash
+# Error: Rate limit exceeded: 429 Too Many Requests
+# Cause: Too many requests in short time period
+
+# Solution 1: Wait for rate limit to reset
+# The response header will include "Retry-After" time
+
+# Solution 2: Reduce request frequency
+# Batch operations where possible
+
+# Solution 3: Upgrade plan for higher limits
+# Visit https://memorygraph.dev/pricing (coming soon)
+```
+
+**Circuit breaker open**:
+```bash
+# Error: Circuit breaker open - too many consecutive failures
+# Cause: Backend temporarily disabled due to repeated failures
+
+# Solution 1: Wait for circuit breaker to reset (default: 60s)
+sleep 60
+memorygraph --backend cloud --health
+
+# Solution 2: Check API status
+curl https://graph-api.memorygraph.dev/health
+
+# Solution 3: Switch to fallback backend temporarily
+memorygraph --backend sqlite  # Use local SQLite while cloud recovers
+```
+
+**Custom API URL**:
+```bash
+# Use custom or self-hosted cloud backend
+export MEMORYGRAPH_API_URL="https://your-instance.example.com"
+memorygraph --backend cloud --show-config
+```
+
+### Turso Backend issues
+
+**Missing credentials**:
+```bash
+# Error: MEMORY_TURSO_URL or MEMORY_TURSO_AUTH_TOKEN not set
+
+# Get credentials from https://turso.tech
+# Then set environment variables:
+export MEMORY_TURSO_URL="libsql://your-database.turso.io"
+export MEMORY_TURSO_AUTH_TOKEN="your-auth-token"
+
+# Verify configuration
+memorygraph --backend turso --show-config
+```
+
+**Connection error**:
+```bash
+# Error: Failed to connect to Turso database
+
+# Verify URL format (should include libsql:// prefix)
+echo $MEMORY_TURSO_URL
+
+# Test connection with turso CLI
+turso db shell your-database
+
+# Check network connectivity
+ping your-database.turso.io
+```
+
 ### Import/Export issues
 
 ```bash
 # Export memories to backup
-memorygraph --export backup.json
+memorygraph export --format json --output backup.json
 
 # Import to new backend
-memorygraph --backend neo4j --import backup.json
+memorygraph --backend neo4j import --format json --input backup.json
 
 # Verify import
 memorygraph --backend neo4j --show-config

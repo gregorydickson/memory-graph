@@ -562,7 +562,7 @@ See: [CLAUDE.md Configuration Examples](docs/examples/CLAUDE_MD_EXAMPLES.md)
 
 ## Backends
 
-MemoryGraph supports 5 backend options to fit your deployment needs:
+MemoryGraph supports 7 backend options to fit your deployment needs:
 
 | Backend | Type | Config | Native Graph | Zero-Config | Best For |
 |---------|------|--------|--------------|-------------|----------|
@@ -571,6 +571,8 @@ MemoryGraph supports 5 backend options to fit your deployment needs:
 | **falkordb** | Client-server | Host:port | ✅ Cypher | ❌ | High-performance production |
 | **neo4j** | Client-server | URI | ✅ Cypher | ❌ | Enterprise features |
 | **memgraph** | Client-server | Host:port | ✅ Cypher | ❌ | Real-time analytics |
+| **turso** | Cloud | URL + Token | No (simulated) | ❌ | Distributed SQLite, edge deployments |
+| **cloud** | Cloud | API Key | ✅ Cypher | ❌ | MemoryGraph Cloud (coming soon) |
 
 **New: FalkorDB Options**
 - **FalkorDBLite**: Zero-config embedded database with native Cypher support, perfect upgrade from SQLite
