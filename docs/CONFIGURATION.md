@@ -325,22 +325,30 @@ memorygraph --backend neo4j --profile extended --log-level DEBUG
 | Neo4j | ✅ | ✅ | ✅ |
 | Memgraph | ✅ | ✅ | ✅ |
 | FalkorDB | ✅ | ✅ | ✅ |
-| FalkorDBLite | ✅ | ❌ | ❌ |
+| FalkorDBLite | ✅ | ⚠️* | ❌ |
 
-### FalkorDBLite Platform Limitation
+*FalkorDBLite on macOS requires specific versions - see details below.
 
-**FalkorDBLite is currently Linux-only** (as of v0.4.0). The bundled `falkordb.so` module is compiled as a Linux ELF binary and is not compatible with macOS or Windows.
+### FalkorDBLite Platform Requirements
 
-- On **Linux**: FalkorDBLite works as an embedded database similar to SQLite but with Cypher query support
-- On **macOS/Windows**: Use SQLite (default), FalkorDB (client-server), or Neo4j instead
+FalkorDBLite officially supports macOS (x86_64 and ARM64) and Linux. However, there are version-specific requirements:
 
-If you need Cypher query support on macOS:
-1. Use FalkorDB with Docker: `docker run -p 6379:6379 falkordb/falkordb:latest`
-2. Or use Neo4j: `docker run -p 7687:7687 neo4j:latest`
+| Platform | Minimum Version | Python | Status |
+|----------|-----------------|--------|--------|
+| Linux x86_64 | Any | 3.12+ | ✅ Full support |
+| macOS x86_64 | 10.13+ | 3.12+ | ✅ Full support |
+| macOS ARM64 | **15.0+** (Sequoia) | 3.12+ | ✅ Full support |
+| macOS ARM64 | 14.x (Sonoma) | 3.12+ | ⚠️ See note below |
+| Windows | - | - | ❌ Not supported |
+
+**macOS ARM64 on Sonoma (14.x) or earlier**: The pre-built wheels require macOS 15.0+. On older versions, pip falls back to building from source, which bundles Linux binaries and won't work. Options:
+1. Upgrade to macOS 15.0 (Sequoia) or later
+2. Use SQLite (default), FalkorDB (client-server), or Neo4j instead
+3. Use FalkorDB with Docker: `docker run -p 6379:6379 falkordb/falkordb:latest`
 
 ### macOS Runtime Requirement
 
-**Important**: On macOS, the FalkorDB module requires the OpenMP runtime library (`libomp`). If you encounter an error like:
+**Important**: On macOS, FalkorDBLite requires the OpenMP runtime library (`libomp`). If you encounter:
 
 ```
 Library not loaded: /opt/homebrew/opt/libomp/lib/libomp.dylib
@@ -351,8 +359,6 @@ Install it using Homebrew:
 ```bash
 brew install libomp
 ```
-
-This applies to both FalkorDBLite (when macOS binaries become available) and any native FalkorDB integrations.
 
 ## Best Practices
 
