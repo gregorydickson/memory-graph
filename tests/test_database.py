@@ -616,21 +616,20 @@ class TestMemoryDatabase:
     @pytest.mark.asyncio
     async def test_get_memory_statistics(self, database, connection, mock_driver, mock_session):
         """Test getting database statistics."""
-        mock_tx = AsyncMock()
-        mock_result = AsyncMock()
+        # Use the create_mock_execute helper to properly handle async execution
+        async def mock_execute_read(func, *args):
+            mock_tx = AsyncMock()
+            mock_result = AsyncMock()
+            mock_result.data = AsyncMock(return_value=[{
+                "total_memories": 100,
+                "total_relationships": 250,
+                "memory_types": {"solution": 50, "problem": 30, "task": 20},
+                "relationship_types": {"SOLVES": 100, "RELATED_TO": 150}
+            }])
+            mock_tx.run = AsyncMock(return_value=mock_result)
+            return await func(mock_tx, *args)
 
-        # Mock statistics data
-        mock_result.data = AsyncMock(return_value=[{
-            "total_memories": 100,
-            "total_relationships": 250,
-            "memory_types": {"solution": 50, "problem": 30, "task": 20},
-            "relationship_types": {"SOLVES": 100, "RELATED_TO": 150}
-        }])
-        mock_tx.run = AsyncMock(return_value=mock_result)
-
-        mock_session.execute_read = AsyncMock(
-            side_effect=lambda func, *args: func(mock_tx, *args)
-        )
+        mock_session.execute_read = AsyncMock(side_effect=mock_execute_read)
         mock_driver.session = MagicMock(return_value=mock_session)
 
         stats = await database.get_memory_statistics()
