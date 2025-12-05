@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Upgraded MCP Python SDK from 1.22.0 to 1.23.1
+- Now supports MCP specification 2025-11-25
+
 ### Added
 - Claude Code Web support via project hooks
 - Auto-installation in remote environments
