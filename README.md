@@ -1,14 +1,25 @@
-# MemoryGraph
+<p align="center">
+  <img src="docs/html/logo-220.png" alt="MemoryGraph Logo" width="220">
+</p>
 
-## Graph based MCP Memory Server for AI Coding Agents
+<h1 align="center">MemoryGraph</h1>
 
-[![Tests](https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml/badge.svg)](https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml)
-[![PyPI](https://img.shields.io/pypi/v/memorygraph)](https://pypi.org/project/memorygraph/)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![Zero Config](https://img.shields.io/badge/setup-zero--config-green)](docs/CONFIGURATION.md)
-[![7 Backends](https://img.shields.io/badge/backends-7%20options-purple)](docs/CONFIGURATION.md)
+<p align="center">
+  <strong>Graph-based MCP Memory Server for AI Coding Agents</strong>
+</p>
 
-A graph-based [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that gives AI coding agents persistent memory. Store patterns, track relationships, retrieve knowledge across sessions.
+<p align="center">
+  <a href="https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml"><img src="https://github.com/gregorydickson/memory-graph/actions/workflows/test.yml/badge.svg" alt="Tests"></a>
+  <a href="https://pypi.org/project/memorygraphMCP/"><img src="https://img.shields.io/pypi/v/memorygraphMCP" alt="PyPI"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python"></a>
+  <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/setup-zero--config-green" alt="Zero Config"></a>
+  <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/backends-7%20options-purple" alt="7 Backends"></a>
+</p>
+
+<p align="center">
+  A graph-based <a href="https://modelcontextprotocol.io">Model Context Protocol (MCP)</a> server that gives AI coding agents persistent memory.<br>
+  Store patterns, track relationships, retrieve knowledge across sessions.
+</p>
 
 ---
 
