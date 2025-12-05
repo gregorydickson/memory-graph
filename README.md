@@ -582,6 +582,43 @@ See [CONFIGURATION.md](docs/CONFIGURATION.md) for setup details.
 
 ---
 
+## Multi-Tenancy (v0.9.6+)
+
+MemoryGraph now supports optional multi-tenancy for team memory sharing and organizational deployments. Phase 1 provides the foundational schema with 100% backward compatibility.
+
+**Key Features:**
+- **Optional**: Disabled by default, zero impact on existing single-tenant deployments
+- **Tenant Isolation**: Scope memories to specific organizations/teams
+- **Visibility Levels**: Control access with `private`, `project`, `team`, or `public` visibility
+- **Migration Support**: Migrate existing databases with built-in CLI command
+- **Performance Optimized**: Conditional indexes only created when multi-tenant mode is enabled
+
+**Quick Start:**
+```bash
+# Migrate existing database to multi-tenant mode
+memorygraph migrate-to-multitenant --tenant-id="acme-corp" --dry-run
+
+# Enable multi-tenant mode
+export MEMORY_MULTI_TENANT_MODE=true
+memorygraph
+```
+
+**Use Cases:**
+- Team collaboration and shared memory
+- Multi-team organizations
+- Department-specific knowledge bases
+- Enterprise deployments
+
+See [MULTI_TENANCY.md](docs/MULTI_TENANCY.md) for complete guide including architecture, migration steps, and usage patterns.
+
+**Roadmap:**
+- ✅ Phase 1 (v0.9.6): Schema enhancement with optional tenant fields
+- Phase 2 (v0.10.0): Query filtering and visibility enforcement
+- Phase 3 (v1.0.0): Authentication integration (JWT, OAuth2)
+- Phase 4 (v1.1.0): Advanced RBAC and audit logging
+
+---
+
 ## Architecture
 
 ### Memory Types

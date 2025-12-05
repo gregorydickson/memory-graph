@@ -276,6 +276,11 @@ export MEMORY_MEMGRAPH_PASSWORD=memgraph
 # Relationship configuration (v0.9.0+)
 export MEMORY_ALLOW_CYCLES=false      # true | false (default) - Allow circular relationships
 
+# Multi-tenancy configuration (v0.9.6+, Phase 1)
+export MEMORY_MULTI_TENANT_MODE=false # true | false (default) - Enable multi-tenant features
+export MEMORY_DEFAULT_TENANT=default  # Default tenant ID for single-tenant mode
+export MEMORY_REQUIRE_AUTH=false      # true | false (default) - Require authentication (future)
+
 # Logging
 export MEMORY_LOG_LEVEL=INFO          # DEBUG | INFO | WARNING | ERROR
 ```
@@ -292,6 +297,56 @@ export MEMORY_LOG_LEVEL=INFO          # DEBUG | INFO | WARNING | ERROR
 - Use `memorygraph --health` to check backend connection and statistics
 - Use `memorygraph --health-json` for JSON output (useful for monitoring/CI)
 - Use `memorygraph --health-timeout 10.0` to set timeout in seconds (default: 5.0)
+
+### New in v0.9.6 - Multi-Tenancy (Phase 1)
+
+**Multi-Tenant Configuration**:
+- `MEMORY_MULTI_TENANT_MODE` - Enable multi-tenant features (default: `false`)
+  - `false` (default): Single-tenant mode, 100% backward compatible with existing deployments
+  - `true`: Multi-tenant mode with tenant isolation and access control
+
+- `MEMORY_DEFAULT_TENANT` - Default tenant ID for single-tenant mode (default: `"default"`)
+  - Used when migrating existing single-tenant databases to multi-tenant mode
+
+- `MEMORY_REQUIRE_AUTH` - Require authentication for operations (default: `false`)
+  - Phase 1: Not yet implemented, reserved for future use
+  - Will be used in Phase 3 (Authentication Integration)
+
+**Migration to Multi-Tenant Mode**:
+```bash
+# Check what would be changed (dry-run)
+memorygraph migrate-to-multitenant --tenant-id="acme-corp" --dry-run
+
+# Migrate existing database to multi-tenant mode
+memorygraph migrate-to-multitenant --tenant-id="acme-corp" --visibility=team
+
+# Enable multi-tenant mode in environment
+export MEMORY_MULTI_TENANT_MODE=true
+
+# Restart server to enable multi-tenant indexes
+memorygraph
+
+# Rollback if needed
+memorygraph migrate-to-multitenant --rollback
+```
+
+**Multi-Tenant Configuration Example**:
+```json
+{
+  "mcpServers": {
+    "memorygraph": {
+      "command": "memorygraph",
+      "args": ["--profile", "extended"],
+      "env": {
+        "MEMORY_MULTI_TENANT_MODE": "true",
+        "MEMORY_DEFAULT_TENANT": "acme-corp"
+      }
+    }
+  }
+}
+```
+
+See [MULTI_TENANCY.md](MULTI_TENANCY.md) for detailed multi-tenancy configuration and usage guide.
 
 ## CLI Options
 

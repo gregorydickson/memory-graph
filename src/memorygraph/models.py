@@ -97,7 +97,61 @@ class MemoryContext(BaseModel):
         - team_id provides team-level scoping
         - visibility controls access levels: private | project | team | public
         - created_by tracks memory ownership for access control
+
+    Examples:
+        Single-tenant context:
+            >>> context = MemoryContext(project_path="/my/project")
+            >>> context.tenant_id is None
+            True
+
+        Multi-tenant team context:
+            >>> context = MemoryContext(
+            ...     tenant_id="acme-corp",
+            ...     team_id="backend",
+            ...     visibility="team",
+            ...     created_by="alice"
+            ... )
+            >>> context.visibility
+            'team'
+
+        Private memory:
+            >>> context = MemoryContext(
+            ...     tenant_id="acme-corp",
+            ...     visibility="private",
+            ...     created_by="bob"
+            ... )
+            >>> context.visibility
+            'private'
     """
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "project_path": "/my/project",
+                    "session_id": "session-123",
+                    "files_involved": ["main.py", "utils.py"],
+                    "languages": ["python"],
+                    "frameworks": ["fastapi"]
+                },
+                {
+                    "tenant_id": "acme-corp",
+                    "team_id": "backend-team",
+                    "visibility": "team",
+                    "created_by": "alice",
+                    "project_path": "/apps/api",
+                    "git_branch": "main"
+                },
+                {
+                    "tenant_id": "acme-corp",
+                    "visibility": "private",
+                    "created_by": "bob",
+                    "user_id": "bob",
+                    "project_path": "/personal/notes"
+                }
+            ]
+        }
+    )
 
     # === Existing fields (unchanged for backward compatibility) ===
     project_path: Optional[str] = None

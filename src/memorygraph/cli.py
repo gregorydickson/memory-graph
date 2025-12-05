@@ -194,6 +194,73 @@ async def handle_migrate(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+async def handle_migrate_multitenant(args: argparse.Namespace) -> None:
+    """Handle migrate-to-multitenant command."""
+    from .backends.factory import BackendFactory
+    from .migration.scripts import migrate_to_multitenant, rollback_from_multitenant
+
+    try:
+        # Connect to backend
+        backend = await BackendFactory.create_backend()
+        backend_name = backend.backend_name()
+
+        if args.rollback:
+            print(f"\n🔄 Rolling back multi-tenancy migration on {backend_name}...")
+
+            result = await rollback_from_multitenant(backend, dry_run=args.dry_run)
+
+            if result['dry_run']:
+                print("\n✅ Dry-run successful - rollback would proceed safely")
+                print(f"   Would clear tenant_id from: {result['memories_updated']} memories")
+            elif result['success']:
+                print("\n✅ Rollback completed successfully!")
+                print(f"   Cleared tenant_id from: {result['memories_updated']} memories")
+            else:
+                print("\n❌ Rollback failed!")
+                for error in result['errors']:
+                    print(f"   - {error}")
+                sys.exit(1)
+
+        else:
+            # Migrate to multi-tenant
+            print(f"\n🔄 Migrating to multi-tenant mode on {backend_name}...")
+            print(f"   Tenant ID: {args.tenant_id}")
+            print(f"   Visibility: {args.visibility}")
+
+            result = await migrate_to_multitenant(
+                backend,
+                tenant_id=args.tenant_id,
+                dry_run=args.dry_run,
+                visibility=args.visibility
+            )
+
+            if result['dry_run']:
+                print("\n✅ Dry-run successful - migration would proceed safely")
+                print(f"   Would update: {result['memories_updated']} memories")
+                print(f"   Tenant ID would be: {result['tenant_id']}")
+                print(f"   Visibility would be: {result['visibility']}")
+            elif result['success']:
+                print("\n✅ Migration completed successfully!")
+                print(f"   Updated: {result['memories_updated']} memories")
+                print(f"   Tenant ID: {result['tenant_id']}")
+                print(f"   Visibility: {result['visibility']}")
+                print("\nNext steps:")
+                print(f"   1. Set MEMORY_MULTI_TENANT_MODE=true in your environment")
+                print(f"   2. Restart the server to enable multi-tenant indexes")
+            else:
+                print("\n❌ Migration failed!")
+                for error in result['errors']:
+                    print(f"   - {error}")
+                sys.exit(1)
+
+        await backend.disconnect()
+
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        logger.error(f"Migration failed: {e}", exc_info=True)
+        sys.exit(1)
+
+
 async def perform_health_check(timeout: float = 5.0) -> dict:
     """
     Perform health check on the backend and return status information.
@@ -540,6 +607,35 @@ Environment Variables:
         help="Skip post-migration verification (faster but less safe)"
     )
 
+    # Migrate to multi-tenant command
+    multitenant_parser = subparsers.add_parser(
+        "migrate-to-multitenant",
+        help="Migrate existing single-tenant database to multi-tenant mode"
+    )
+    multitenant_parser.add_argument(
+        "--tenant-id",
+        type=str,
+        default="default",
+        help="Tenant ID to assign to existing memories (default: default)"
+    )
+    multitenant_parser.add_argument(
+        "--visibility",
+        type=str,
+        choices=["private", "project", "team", "public"],
+        default="team",
+        help="Visibility level to set for existing memories (default: team)"
+    )
+    multitenant_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be changed without making changes"
+    )
+    multitenant_parser.add_argument(
+        "--rollback",
+        action="store_true",
+        help="Rollback multi-tenancy migration (clear tenant_id fields)"
+    )
+
     args = parser.parse_args()
 
     # Apply CLI arguments to environment variables
@@ -619,6 +715,10 @@ Environment Variables:
 
     if args.command == "migrate":
         asyncio.run(handle_migrate(args))
+        sys.exit(0)
+
+    if args.command == "migrate-to-multitenant":
+        asyncio.run(handle_migrate_multitenant(args))
         sys.exit(0)
 
     # Start the server
