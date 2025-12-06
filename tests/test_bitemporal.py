@@ -26,6 +26,11 @@ from src.memorygraph.backends.sqlite_fallback import SQLiteFallbackBackend
 from src.memorygraph.sqlite_database import SQLiteMemoryDatabase
 
 
+# Test constants
+ACCEPTABLE_TIME_DELTA_SECONDS = 1.0
+MAX_POINT_IN_TIME_QUERY_SECONDS = 0.1
+
+
 @pytest.fixture
 async def temporal_backend(tmp_path):
     """Create a SQLite backend with temporal schema."""
@@ -172,8 +177,8 @@ class TestTemporalRelationshipCreation:
         row = cursor.fetchone()
         valid_from = datetime.fromisoformat(row[0])
 
-        # Should match the past_time we provided (within 1 second)
-        assert abs((valid_from - past_time).total_seconds()) < 1
+        # Should match the past_time we provided (within acceptable delta)
+        assert abs((valid_from - past_time).total_seconds()) < ACCEPTABLE_TIME_DELTA_SECONDS
 
 
 class TestPointInTimeQueries:
@@ -501,7 +506,7 @@ class TestMigrationFromNonTemporal:
     """Test migrating existing databases to temporal schema."""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Migration script not yet implemented - covered by workplan Section 5")
+    @pytest.mark.skip(reason="Migration testing deferred - see src/memorygraph/migration/scripts/bitemporal_migration.py")
     async def test_migration_adds_temporal_fields(self, tmp_path):
         """Test that migration adds temporal fields to existing database."""
         db_path = str(tmp_path / "pre_temporal.db")
@@ -696,8 +701,8 @@ class TestTemporalQueryPerformance:
         relationships = await temporal_db.get_related_memories("mem1", as_of=query_time)
         elapsed = time.time() - start
 
-        # Should complete in under 100ms for 100 relationships
-        assert elapsed < 0.1, f"Query took {elapsed}s, expected < 0.1s"
+        # Should complete in under maximum allowed time for 100 relationships
+        assert elapsed < MAX_POINT_IN_TIME_QUERY_SECONDS, f"Query took {elapsed}s, expected < {MAX_POINT_IN_TIME_QUERY_SECONDS}s"
         assert len(relationships) > 0
 
 

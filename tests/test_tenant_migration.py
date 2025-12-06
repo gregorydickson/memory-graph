@@ -521,5 +521,242 @@ class TestMigrationIdempotency:
                 await backend.disconnect()
 
 
+class TestMigrationFailureScenarios:
+    """Test migration failure and error handling scenarios."""
+
+    async def test_invalid_tenant_id_empty(self):
+        """Test that migration fails with empty tenant_id."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "invalid_empty.db")
+
+            with mock.patch.dict(os.environ, {"MEMORY_MULTI_TENANT_MODE": "true"}):
+                from importlib import reload
+                import memorygraph.config
+                reload(memorygraph.config)
+
+                backend = SQLiteFallbackBackend(db_path=db_path)
+                await backend.connect()
+                await backend.initialize_schema()
+
+                # Attempt migration with empty tenant_id
+                from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+
+                # Test empty string
+                with pytest.raises(ValueError, match="tenant_id cannot be empty"):
+                    await migrate_to_multitenant(backend, tenant_id="")
+
+                # Test whitespace only
+                with pytest.raises(ValueError, match="tenant_id cannot be empty"):
+                    await migrate_to_multitenant(backend, tenant_id="   ")
+
+                await backend.disconnect()
+
+    async def test_invalid_tenant_id_special_characters(self):
+        """Test that migration fails with invalid characters in tenant_id."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "invalid_chars.db")
+
+            with mock.patch.dict(os.environ, {"MEMORY_MULTI_TENANT_MODE": "true"}):
+                from importlib import reload
+                import memorygraph.config
+                reload(memorygraph.config)
+
+                backend = SQLiteFallbackBackend(db_path=db_path)
+                await backend.connect()
+                await backend.initialize_schema()
+
+                from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+
+                # Test special characters
+                invalid_tenant_ids = [
+                    "tenant@corp",
+                    "tenant.corp",
+                    "tenant corp",
+                    "tenant/corp",
+                    "tenant\\corp",
+                    "tenant#corp",
+                    "tenant$corp"
+                ]
+
+                for invalid_id in invalid_tenant_ids:
+                    with pytest.raises(
+                        ValueError,
+                        match="tenant_id must contain only alphanumeric characters, dashes, and underscores"
+                    ):
+                        await migrate_to_multitenant(backend, tenant_id=invalid_id)
+
+                await backend.disconnect()
+
+    async def test_invalid_tenant_id_too_long(self):
+        """Test that migration fails with tenant_id exceeding 64 characters."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "invalid_length.db")
+
+            with mock.patch.dict(os.environ, {"MEMORY_MULTI_TENANT_MODE": "true"}):
+                from importlib import reload
+                import memorygraph.config
+                reload(memorygraph.config)
+
+                backend = SQLiteFallbackBackend(db_path=db_path)
+                await backend.connect()
+                await backend.initialize_schema()
+
+                from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+
+                # Test tenant_id with 65 characters
+                long_tenant_id = "a" * 65
+
+                with pytest.raises(ValueError, match="tenant_id must be 64 characters or less"):
+                    await migrate_to_multitenant(backend, tenant_id=long_tenant_id)
+
+                # Test that 64 characters is OK
+                max_tenant_id = "a" * 64
+                result = await migrate_to_multitenant(backend, tenant_id=max_tenant_id, dry_run=True)
+                assert result["success"] is True
+
+                await backend.disconnect()
+
+    async def test_invalid_visibility_value(self):
+        """Test that migration fails with invalid visibility value."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "invalid_visibility.db")
+
+            with mock.patch.dict(os.environ, {"MEMORY_MULTI_TENANT_MODE": "true"}):
+                from importlib import reload
+                import memorygraph.config
+                reload(memorygraph.config)
+
+                backend = SQLiteFallbackBackend(db_path=db_path)
+                await backend.connect()
+                await backend.initialize_schema()
+
+                from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+
+                # Test invalid visibility values
+                invalid_visibility_values = ["global", "shared", "internal", "secret", ""]
+
+                for invalid_visibility in invalid_visibility_values:
+                    with pytest.raises(
+                        ValueError,
+                        match="visibility must be one of"
+                    ):
+                        await migrate_to_multitenant(
+                            backend,
+                            tenant_id="valid-tenant",
+                            visibility=invalid_visibility
+                        )
+
+                await backend.disconnect()
+
+    async def test_migration_with_disconnected_backend(self):
+        """Test that migration fails when backend is not connected."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "disconnected.db")
+
+            backend = SQLiteFallbackBackend(db_path=db_path)
+            # Don't connect the backend
+
+            from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+            from memorygraph.models import DatabaseConnectionError
+
+            with pytest.raises(DatabaseConnectionError, match="Backend must be connected"):
+                await migrate_to_multitenant(backend, tenant_id="test-tenant")
+
+    async def test_migration_dry_run_no_changes(self):
+        """Test that dry_run mode does not make any actual changes."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "dry_run.db")
+
+            with mock.patch.dict(os.environ, {"MEMORY_MULTI_TENANT_MODE": "false"}):
+                from importlib import reload
+                import memorygraph.config
+                reload(memorygraph.config)
+
+                backend = SQLiteFallbackBackend(db_path=db_path)
+                await backend.connect()
+                await backend.initialize_schema()
+
+                # Wrap backend with database layer
+                db = SQLiteMemoryDatabase(backend)
+                await db.initialize_schema()
+
+                # Create memories without tenant_id
+                memory = Memory(
+                    type=MemoryType.TASK,
+                    title="Test Memory",
+                    content="Test content",
+                    context=MemoryContext(project_path="/project")
+                )
+                memory_id = await db.store_memory(memory)
+
+                from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+
+                # Run dry_run migration
+                result = await migrate_to_multitenant(backend, tenant_id="test-tenant", dry_run=True)
+
+                assert result["success"] is True
+                assert result["dry_run"] is True
+                assert result["memories_updated"] == 1
+
+                # Verify memory was NOT actually updated
+                memory = await db.get_memory(memory_id)
+                assert memory.context.tenant_id is None
+
+                await backend.disconnect()
+
+    async def test_migration_partial_success_tracking(self):
+        """Test that migration tracks partial success when some memories update successfully."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "partial.db")
+
+            with mock.patch.dict(os.environ, {"MEMORY_MULTI_TENANT_MODE": "false"}):
+                from importlib import reload
+                import memorygraph.config
+                reload(memorygraph.config)
+
+                backend = SQLiteFallbackBackend(db_path=db_path)
+                await backend.connect()
+                await backend.initialize_schema()
+
+                # Wrap backend with database layer
+                db = SQLiteMemoryDatabase(backend)
+                await db.initialize_schema()
+
+                # Create multiple memories
+                for i in range(5):
+                    memory = Memory(
+                        type=MemoryType.TASK,
+                        title=f"Task {i}",
+                        content=f"Content {i}",
+                        context=MemoryContext(project_path="/project")
+                    )
+                    await db.store_memory(memory)
+
+                from memorygraph.migration.scripts.multitenancy_migration import migrate_to_multitenant
+
+                # Run migration (should succeed for all memories)
+                result = await migrate_to_multitenant(backend, tenant_id="test-tenant")
+
+                assert result["success"] is True
+                assert result["memories_updated"] == 5
+                assert len(result["errors"]) == 0
+
+                await backend.disconnect()
+
+    async def test_rollback_with_disconnected_backend(self):
+        """Test that rollback fails when backend is not connected."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "rollback_disconnected.db")
+
+            backend = SQLiteFallbackBackend(db_path=db_path)
+            # Don't connect the backend
+
+            from memorygraph.migration.scripts.multitenancy_migration import rollback_from_multitenant
+            from memorygraph.models import DatabaseConnectionError
+
+            with pytest.raises(DatabaseConnectionError, match="Backend must be connected"):
+                await rollback_from_multitenant(backend)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -1,6 +1,6 @@
 # memory-graph Product Roadmap
 
-**Document Version**: 3.1
+**Document Version**: 3.3
 **Last Updated**: December 2025
 **Author**: Gregory Dickson
 **Status**: Strategic Plan - COMPETITIVE RESPONSE UPDATE
@@ -13,16 +13,33 @@
 
 ### Competitor 1: Byterover Cipher (Direct MCP Competitor)
 
-Cipher is an MCP-based memory layer for coding agents with 3.2K GitHub stars, built-in semantic search, and a commercial cloud product (Byterover.dev). They target the exact same market as memory-graph.
+Cipher is an MCP-based memory layer for coding agents with 3.2K GitHub stars and a commercial cloud product (Byterover.dev). They target the exact same market as memory-graph.
 
-| Aspect | Cipher | memory-graph |
-|--------|--------|--------------|
+**🚨 BREAKING UPDATE (Dec 3, 2025): Byterover CLI 0.3.1 Release**
+
+Byterover has pivoted away from vector search! Key changes:
+- **Context Tree**: New hierarchical memory structure (Domains → Topics → Context Files)
+- **Agentic Search**: Replaced vector DB with agent-driven navigation
+- **Deprecated ACE**: Removed their previous workflow due to "garbage in, garbage out" problems
+- **New CLI**: `brv curate`, `brv query`, `brv pull` (team sync)
+
+**Their stated reasoning for abandoning vectors:**
+> "Vector DB and cosine similarity are not great at capturing complex and high-variance coding details... similarity search is strong at recall but often weaker at precision... retrieving a similar-looking function instead of the correct one can overload your context window."
+
+> "Instead of flattening code into embeddings and hoping cosine similarity finds the right function, we let the agent navigate the codebase like a developer would."
+
+**This validates our graph-first approach!** They're moving toward what we already do.
+
+| Aspect | Cipher (v0.3.1) | memory-graph |
+|--------|-----------------|--------------|
 | License | Elastic 2.0 (restrictive) | Apache 2.0 ✅ |
 | Language | Node.js | Python ✅ |
-| Search | Vector-first (Qdrant, Milvus) | Graph-first + planned hybrid |
+| Search | ~~Vectors~~ → Agentic Search | Graph-first + Semantic Navigation ✅ |
+| Memory Structure | Context Tree (Domains/Topics) | Knowledge Graph (35+ typed relationships) ✅ |
 | Relationships | Generic edges | 35+ typed relationships ✅ |
 | GitHub Stars | 3,200+ | Growing |
 | Cloud | Byterover.dev (live) | memorygraph.dev (planned) |
+| Team Sync | `brv pull` | Planned Phase 4 |
 
 ### Competitor 2: Zep/Graphiti (Temporal Knowledge Graph Leader)
 
@@ -48,11 +65,14 @@ Graphiti (by Zep AI, Y Combinator backed) is the state-of-the-art temporal knowl
 
 | Gap | Competitors Have | We Need | Priority | Phase |
 |-----|-----------------|---------|----------|-------|
-| Semantic Search | Cipher: vectors, Graphiti: hybrid | Add embedding support | 🔴 CRITICAL | 2 |
+| Semantic Navigation | Cipher: Agentic Search | Enhanced navigation tools | 🔴 CRITICAL | 2 |
 | Temporal Model | Graphiti: bi-temporal | Implement bi-temporal tracking | 🔴 HIGH | 2 |
 | Cloud Product | Cipher: Byterover.dev, Zep: managed | memorygraph.dev | 🔴 CRITICAL | 3 |
 | GitHub Stars | Cipher: 3.2K, Graphiti: 20K | Accelerate marketing | 🔴 HIGH | 1 |
+| Team Sync | Cipher: `brv pull` (manual) | Cloud-native sync (automatic) | 🟡 MEDIUM | 3-4 |
 | Benchmarks | Graphiti: DMR 94.8% | Run DMR benchmark | 🟡 MEDIUM | 2 |
+
+**Note on Semantic Search**: Cipher has abandoned vector search in favor of agentic navigation (CLI 0.3.1). This validates our approach. We should focus on **Semantic Navigation** (enhanced tools for LLM-driven graph traversal) rather than rushing to add embeddings.
 
 ### Key Advantages to Leverage
 
@@ -304,13 +324,15 @@ Elastic License and is Node.js only. We chose Apache 2.0 and Python deliberately
 
 ---
 
-## Phase 2: Search & Temporal Model (ELEVATED PRIORITY)
+## Phase 2: Semantic Navigation & Temporal Model (ELEVATED PRIORITY)
 **Timeline**: Weeks 6-9
-**Goal**: Close semantic search gap with Cipher, implement bi-temporal tracking (learn from Graphiti)
+**Goal**: Implement semantic navigation (validated by Cipher's pivot), add bi-temporal tracking (learn from Graphiti)
 
-### Critical Gap Analysis
+### Critical Strategic Insight
 
-Cipher's semantic search is a real advantage. Graphiti's temporal model is state-of-the-art (94.8% DMR accuracy). We need to close both gaps while maintaining our lightweight advantage.
+**Cipher abandoned vector search in v0.3.1!** They now use "Agentic Search" - letting the LLM navigate rather than relying on embeddings. This validates our graph-first approach.
+
+Our strategy: Instead of adding embeddings, enhance our tools so Claude can navigate our knowledge graph semantically. Claude already understands language, synonyms, and intent - we just need better navigation tools.
 
 ### 2.1 Study Graphiti Architecture
 
@@ -383,64 +405,77 @@ CREATE INDEX idx_relationships_temporal ON relationships(valid_from, valid_until
 - "Show me how our understanding evolved over time"
 - "What did we know about this problem last month?"
 
-### 2.3 Embedding Support (Core)
+### 2.3 Semantic Navigation (Agentic Search Alternative)
+
+Instead of embeddings, we implement enhanced tools for LLM-driven navigation. This approach is validated by Cipher's pivot away from vectors.
+
+**Philosophy**: Claude already understands language semantically. We don't need to embed "timeout" to find "connection error" - Claude knows they're related. We just need tools that let Claude navigate our graph intelligently.
 
 | Task | Priority | Status |
 |------|----------|--------|
-| Add optional sentence-transformers dependency | 🔴 CRITICAL | ⬜ TODO |
-| Implement embedding generation for entities | 🔴 CRITICAL | ⬜ TODO |
-| Implement embedding generation for observations | 🔴 CRITICAL | ⬜ TODO |
-| SQLite vector storage (sqlite-vec extension) | 🔴 CRITICAL | ⬜ TODO |
-| Cosine similarity search | 🔴 CRITICAL | ⬜ TODO |
+| Add `browse_memory_types` tool - show entity types with counts | 🔴 CRITICAL | ⬜ TODO |
+| Add `browse_by_project` tool - navigate by project context | 🔴 CRITICAL | ⬜ TODO |
+| Add `find_chain` tool - auto-traverse SOLVES/CAUSES/DEPENDS_ON | 🔴 CRITICAL | ⬜ TODO |
+| Add `contextual_search` tool - search within related memories | 🔴 HIGH | ⬜ TODO |
+| Add `browse_domains` tool - list high-level categories | 🔴 HIGH | ⬜ TODO |
+| Implement intent classification for queries | 🟡 MEDIUM | ⬜ TODO |
+| Add "why this result?" explanations | 🟡 MEDIUM | ⬜ TODO |
 
-**Implementation**:
+**New Navigation Tools**:
 ```python
-# Optional embedding support
-class EmbeddingProvider:
-    def __init__(self, model: str = "all-MiniLM-L6-v2"):
-        from sentence_transformers import SentenceTransformer
-        self.model = SentenceTransformer(model)
-    
-    def embed(self, texts: List[str]) -> np.ndarray:
-        return self.model.encode(texts, normalize_embeddings=True)
+# Enhanced tools for semantic navigation
+new_tools = [
+    "browse_memory_types",   # "Show me all error types" → lists errors with counts
+    "browse_by_project",     # Navigate memories by project context
+    "browse_domains",        # High-level categories (like Cipher's Context Tree)
+    "find_chain",            # "What solved X?" → auto-traverses SOLVES relationships
+    "contextual_search",     # Search only within related memories
+    "trace_dependencies",    # Follow DEPENDS_ON chains
+]
 ```
 
-### 2.4 Hybrid Search (Our Differentiator)
+**Semantic Navigation Flow** (vs Cipher's Agentic Search):
+```
+User: "What solved the timeout issue?"
+         │
+         ▼
+Claude analyzes intent: "find solution to timeout problem"
+         │
+         ▼
+Claude uses navigation tools:
+  1. search_memories(type="error", query="timeout")
+     → finds TimeoutError entity
+  2. find_chain(entity_id, relationship="SOLVES") 
+     → finds RetryWithBackoff solution
+  3. get_related(solution_id, relationship="DEPENDS_ON")
+     → finds ExponentialBackoff dependency
+         │
+         ▼
+Result: "TimeoutError was SOLVED_BY RetryWithBackoff,
+        which DEPENDS_ON ExponentialBackoff, 
+        USED_IN PaymentService and AuthService"
+        
+        + Temporal: "Valid since 2024-01-15"
+```
 
-Combine vectors WITH graph relationships (like Graphiti, but coding-specific).
+**Why This Beats Embeddings**:
+- No embedding model dependency (stays lightweight)
+- No vector DB overhead
+- Claude's semantic understanding is better than cosine similarity for code
+- Relationship traversal provides context embeddings can't
+- Validates Cipher's conclusion: "precision is critical for code"
+
+### 2.4 Optional Embedding Support (Future)
+
+Keep embeddings as optional enhancement, not core requirement.
 
 | Task | Priority | Status |
 |------|----------|--------|
-| Implement hybrid search algorithm | 🔴 CRITICAL | ⬜ TODO |
-| Semantic results enriched with relationships | 🔴 CRITICAL | ⬜ TODO |
-| Add BM25 keyword search component | 🔴 HIGH | ⬜ TODO |
-| Configurable semantic vs. graph weighting | 🔴 HIGH | ⬜ TODO |
-| "Why this result?" explanations | 🟡 MEDIUM | ⬜ TODO |
-| No LLM calls during retrieval (like Graphiti) | 🔴 HIGH | ⬜ TODO |
+| Design optional embedding interface | 🟡 MEDIUM | ⬜ TODO |
+| Add sentence-transformers as optional dependency | 🟡 MEDIUM | ⬜ TODO |
+| SQLite vector storage (sqlite-vec) for those who want it | 🟡 MEDIUM | ⬜ TODO |
 
-**Hybrid Search Flow**:
-```
-User: "timeout issues"
-         │
-         ▼
-┌─────────────────────────────────────────┐
-│         HYBRID SEARCH ENGINE            │
-│    (Inspired by Graphiti approach)      │
-├─────────────────┬───────────────────────┤
-│  Vector Search  │   Graph Enrichment    │
-│  + BM25 Keyword │   (our advantage)     │
-├─────────────────┼───────────────────────┤
-│ TimeoutError    │ SOLVED_BY RetryBackoff│
-│ ConnectionError │ CAUSED_BY RateLimit   │
-│ APITimeout      │ USED_IN PaymentService│
-└─────────────────┴───────────────────────┘
-         │
-         ▼
-Result: "TimeoutError (semantic match) was SOLVED_BY 
-        RetryWithBackoff, which DEPENDS_ON ExponentialBackoff"
-        
-        + Temporal context: "This solution has been valid since 2024-01-15"
-```
+**Key Decision**: Embeddings are optional. Default is semantic navigation via enhanced tools. Users who want vectors can enable them, but it's not required.
 
 ### 2.5 Search UX Improvements
 
@@ -451,22 +486,25 @@ Result: "TimeoutError (semantic match) was SOLVED_BY
 | Search history | 🟡 MEDIUM | ⬜ TODO |
 | Saved searches | 🟢 LOW | ⬜ TODO |
 
-### 2.6 Marketing: "Vectors + Relationships + Time"
+### 2.6 Marketing: "Semantic Navigation + Relationships + Time"
 
 | Task | Priority | Status |
 |------|----------|--------|
-| Blog: "Why Hybrid Search Beats Pure Vectors" | 🔴 HIGH | ⬜ TODO |
+| Blog: "Why We Chose Semantic Navigation Over Vectors" | 🔴 HIGH | ⬜ TODO |
+| Blog: "Cipher Abandoned Vectors - Here's Why We Agree" | 🔴 HIGH | ⬜ TODO |
 | Blog: "Temporal Memory: Know What Changed and When" | 🔴 HIGH | ⬜ TODO |
-| Demo video: hybrid search in action | 🔴 HIGH | ⬜ TODO |
-| Update comparison page with search + temporal capabilities | 🔴 HIGH | ⬜ TODO |
+| Demo video: semantic navigation in action | 🔴 HIGH | ⬜ TODO |
+| Update comparison page with navigation + temporal capabilities | 🔴 HIGH | ⬜ TODO |
+
+**Marketing Angle**: "Even Cipher admits vectors don't work for code. We've known this all along - that's why we built a knowledge graph with typed relationships."
 
 ### Phase 2 Success Metrics
 - [ ] Bi-temporal schema implemented and documented
-- [ ] Semantic search functional and documented
-- [ ] Hybrid search demo video published
-- [ ] <100ms p95 latency for hybrid queries
+- [ ] New navigation tools implemented (browse_memory_types, find_chain, etc.)
+- [ ] Semantic navigation demo video published
+- [ ] <50ms p95 latency for navigation queries (faster than vector search!)
 - [ ] Point-in-time queries working
-- [ ] User feedback: "search is as good or better than Cipher"
+- [ ] User feedback: "navigation feels natural, like browsing code"
 - [ ] 500+ GitHub stars
 
 ---
@@ -545,18 +583,86 @@ Cipher is MCP-only. Our SDK expands to LangChain, CrewAI, etc.
 **Timeline**: Weeks 15-20
 **Goal**: Match Cipher's workspace memory, add unique value
 
-### 4.1 Match Cipher's Workspace Memory
+### 4.1 Automatic Memory Scoping (Zero User Configuration)
 
-Cipher has "workspace memory" for teams. We need parity.
+Memories should automatically be scoped correctly without user input. The system infers scope from content and context.
+
+**Three Scope Levels:**
+- **User-scoped**: Personal preferences, individual learnings (visible only to user)
+- **Project-scoped**: Code patterns, errors, solutions for a specific codebase (visible to project members)
+- **Team-scoped**: Shared conventions, architecture decisions, team standards (visible to all team members)
+
+**Automatic Scope Detection:**
+
+| Signal | Inferred Scope | Example |
+|--------|---------------|--------|
+| References specific file paths | Project | "Fixed bug in `/src/auth/oauth.py`" |
+| References project-specific entities | Project | "PaymentService timeout issue" |
+| General coding pattern (no project refs) | Team | "Use exponential backoff for retries" |
+| Team convention/standard language | Team | "We use snake_case for Python" |
+| Personal preference markers | User | "I prefer...", "My typical..." |
+| Created in team workspace context | Team | Working in shared repo |
 
 | Task | Priority | Status |
 |------|----------|--------|
-| Shared team memory namespace | 🔴 CRITICAL | ⬜ TODO |
-| Team member management | 🔴 HIGH | ⬜ TODO |
-| Personal vs. team memory toggle | 🔴 HIGH | ⬜ TODO |
-| Team-wide search | 🔴 HIGH | ⬜ TODO |
+| Design scope inference algorithm | 🔴 CRITICAL | ⬜ TODO |
+| Implement content-based scope detection | 🔴 CRITICAL | ⬜ TODO |
+| Implement context-based scope detection | 🔴 CRITICAL | ⬜ TODO |
+| Add project_path tracking to memories | 🔴 HIGH | ⬜ TODO |
+| Scope inheritance via relationships | 🔴 HIGH | ⬜ TODO |
+| Admin override for mis-scoped memories | 🟡 MEDIUM | ⬜ TODO |
 
-### 4.2 Beat Cipher with Better Attribution
+**Scope Inference Logic:**
+```python
+def infer_scope(memory: Memory, context: Context) -> Scope:
+    # 1. Project markers (file paths, specific entities)
+    if has_project_paths(memory) or references_project_entities(memory):
+        return Scope.PROJECT
+    
+    # 2. Memory type patterns
+    if memory.type in ["error", "fix", "file_context"]:
+        return Scope.PROJECT  # Errors/fixes are project-specific
+    
+    if memory.type in ["code_pattern", "workflow"] and is_generalizable(memory):
+        return Scope.TEAM  # Reusable patterns → team
+    
+    # 3. Personal indicators
+    if has_personal_markers(memory) or memory.type == "general":
+        return Scope.USER
+    
+    # 4. Relationship inheritance
+    if memory.solves(project_scoped_problem):
+        return Scope.PROJECT
+    
+    # 5. Default to project (safest - not too broad, not too narrow)
+    return Scope.PROJECT
+```
+
+**Key Principle**: Users never manually choose scope. The system "just works."
+
+### 4.2 Team Workspaces
+
+Cipher v0.3.1 uses `brv pull` for manual team sync. Our cloud-first approach is simpler: **team members just connect to the same cloud workspace - no sync commands needed.**
+
+| Our Approach | Cipher's Approach |
+|--------------|-------------------|
+| Connect to team workspace → automatic sync | Manual `brv pull` / `brv push` |
+| Real-time collaboration | Batch sync with conflicts |
+| No local state management | Must manage local vs remote |
+| Works offline, syncs when online | Requires explicit sync |
+
+**Key Insight**: Cloud-native beats sync commands. This is a UX advantage over Cipher.
+
+| Task | Priority | Status |
+|------|----------|--------|
+| Team workspaces in cloud (from Phase 3) | 🔴 CRITICAL | ⬜ TODO |
+| Team member management & invitations | 🔴 HIGH | ⬜ TODO |
+| Seamless workspace switching (personal ↔ team) | 🔴 HIGH | ⬜ TODO |
+| Team-wide search across all scopes | 🔴 HIGH | ⬜ TODO |
+| Offline mode with automatic cloud sync | 🟡 MEDIUM | ⬜ TODO |
+| Real-time memory updates across team | 🟡 MEDIUM | ⬜ TODO |
+
+### 4.3 Beat Cipher with Better Attribution
 
 Cipher has basic team sharing. We can add:
 
@@ -567,7 +673,7 @@ Cipher has basic team sharing. We can add:
 | "Trending solutions" in team | 🟡 MEDIUM | ⬜ TODO |
 | Expertise mapping (who knows what) | 🟢 LOW | ⬜ TODO |
 
-### 4.3 RBAC (Match Cipher)
+### 4.4 RBAC (Match Cipher)
 
 | Task | Priority | Status |
 |------|----------|--------|
@@ -702,6 +808,26 @@ Build on Phase 2 bi-temporal foundation.
 
 ---
 
+## Deferred Features
+
+### VSCode Extension (Deferred to v1.2.0+)
+
+**Decision**: A native VSCode extension is deferred until after cloud launch and SDK stabilization.
+
+**Current Alternative**: VSCode users can access memory-graph today via:
+- **MCP + GitHub Copilot**: GitHub Copilot supports MCP servers, enabling Claude Code-style memory in VSCode
+- **Claude Code CLI**: Works in any terminal, including VSCode's integrated terminal
+
+**Rationale for Deferral**:
+1. **Resource Focus**: Cloud platform (Phase 3) and SDK (Phase 3) are higher priority for market positioning
+2. **Existing Coverage**: MCP + Copilot provides VSCode support without dedicated extension development
+3. **SDK First**: A VSCode extension would benefit from a stable SDK (Phase 3 deliverable)
+4. **Market Signal**: Will revisit based on user demand after v1.0.0 launch
+
+**When to Revisit**: After v1.0.0 cloud launch, evaluate user feedback and demand for native extension.
+
+---
+
 ## Risk Assessment Update
 
 ### Competitive Risks
@@ -732,6 +858,8 @@ Build on Phase 2 bi-temporal foundation.
 | 2.1 | Dec 2025 | Gregory Dickson | Semantic search strategy |
 | 3.0 | Dec 2025 | Gregory Dickson | **COMPETITIVE RESPONSE**: Added Phase 0 for Byterover Cipher response |
 | 3.1 | Dec 2025 | Gregory Dickson | **GRAPHITI ANALYSIS**: Added Zep/Graphiti as competitor, added bi-temporal tracking to Phase 2, renamed Phase 2 to "Search & Temporal Model", added Graphiti architecture study tasks |
+| 3.2 | Dec 2025 | Gregory Dickson | **CIPHER v0.3.1 RESPONSE**: Updated Cipher profile (they abandoned vectors for Agentic Search!), replaced embedding strategy with Semantic Navigation approach, positioned cloud-native sync as advantage over Cipher's manual `brv pull`, added marketing angles around Cipher's validation of our approach |
+| 3.3 | Dec 2025 | Gregory Dickson | **DEFERRED FEATURES**: Added VSCode Extension deferral decision (v1.2.0+), documented MCP + GitHub Copilot as current alternative |
 
 ---
 

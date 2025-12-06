@@ -1,6 +1,6 @@
 # MemoryGraph Workplan Index
 
-**Last Updated**: 2025-12-04
+**Last Updated**: 2025-12-05
 **Current Version**: v0.9.6 (released)
 **Test Status**: 1,200 tests passing
 **Purpose**: Central index for all workplans organized by priority and dependency
@@ -30,7 +30,7 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Prerequisites**: None
 - **Tasks**: 25+
 
-### Critical Path (Completed ✅)
+### Foundation (v0.9.x) - Completed ✅
 
 **[1-WORKPLAN.md](1-WORKPLAN.md)** - Critical Fixes - **COMPLETE** ✅
 - Fixed datetime.utcnow() deprecation (2,379 instances)
@@ -39,8 +39,6 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Status**: COMPLETE (2025-12-04)
 - **Prerequisites**: None
 - **Tasks**: 12 (all completed)
-
-### High Priority (Completed ✅)
 
 **[2-WORKPLAN.md](2-WORKPLAN.md)** - Test Coverage Improvements - **COMPLETE** ✅
 - Increased server.py coverage significantly
@@ -59,8 +57,6 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Prerequisites**: 1-WORKPLAN completed ✅
 - **Tasks**: 30 (core infrastructure complete, optional work deferred)
 
-### Medium Priority (Completed ✅)
-
 **[4-WORKPLAN.md](4-WORKPLAN.md)** - Refactoring server.py - **COMPLETE** ✅
 - Tool handlers extracted into separate modules
 - server.py reduced: 1,502 lines → 873 lines (42% reduction, exceeds <500 target)
@@ -68,8 +64,6 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Status**: COMPLETE (2025-12-04)
 - **Prerequisites**: 1-3 completed ✅
 - **Tasks**: 20 (all completed)
-
-### Low Priority (Completed ✅)
 
 **[5-WORKPLAN.md](5-WORKPLAN.md)** - New Features (Pagination & Cycle Detection) - **COMPLETE** ✅
 - Result pagination implemented (offset/limit with PaginatedResult)
@@ -80,7 +74,7 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Prerequisites**: 1-3 completed ✅
 - **Tasks**: 22 (core features complete, docs deferred)
 
-### Migration & Export (v0.10.0 Features - Substantially Complete)
+### Migration & Export (v0.9.x) - Substantially Complete ✅
 
 **[9-WORKPLAN.md](9-WORKPLAN.md)** - Universal Export Refactor - **SUBSTANTIALLY COMPLETE** ✅
 - Export/import refactored to be backend-agnostic
@@ -108,6 +102,83 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Reference**: ADR-015 Phases 4-6
 - **Tasks**: 26 (MCP tools complete, benchmarks/docs pending)
 
+### v0.10.0 Features - NEW (Competitive Response)
+
+**[12-WORKPLAN.md](12-WORKPLAN.md)** - Semantic Navigation Tools (v0.10.0) - **NEW**
+- Implement enhanced navigation tools (browse_memory_types, find_chain, etc.)
+- Enable LLM-driven semantic graph traversal (no embeddings)
+- Validated by Cipher's pivot away from vectors
+- **Priority**: HIGH (Competitive Gap)
+- **Prerequisites**: 1-5 complete ✅
+- **Reference**: PRODUCT_ROADMAP.md Phase 2.3
+- **Tasks**: 60+ (across 9 sections)
+- **Estimated Effort**: 8-12 hours
+
+**[13-WORKPLAN.md](13-WORKPLAN.md)** - Bi-Temporal Schema (v0.10.0) - **NEW**
+- Implement bi-temporal tracking (valid_from, valid_until, recorded_at)
+- Track both when facts were true AND when we learned them
+- Learn from Graphiti's proven temporal model
+- **Priority**: HIGH (Learn from Graphiti)
+- **Prerequisites**: 1-5 complete ✅
+- **Reference**: PRODUCT_ROADMAP.md Phase 2.2, ADR-016 (to be created)
+- **Tasks**: 70+ (across 10 sections)
+- **Estimated Effort**: 12-16 hours
+
+### v1.0.0 Features - NEW (Cloud Launch)
+
+**[14-WORKPLAN.md](14-WORKPLAN.md)** - Cloud Infrastructure - LOW COST (v1.0.0) - **NEW**
+- Deploy memorygraph.dev using cost-effective managed services
+- Free tiers and serverless (Cloudflare Pages, Cloud Run, Supabase)
+- Target: <$50/month for first 1000 users
+- **Priority**: CRITICAL (Competitive Response)
+- **Prerequisites**: Domain registered, 1-5 complete ✅
+- **Reference**: PRODUCT_ROADMAP.md Phase 3
+- **Tasks**: 100+ (across 14 sections)
+- **Estimated Effort**: 16-24 hours
+
+**[15-WORKPLAN.md](15-WORKPLAN.md)** - Authentication & API Keys (v1.0.0) - **NEW**
+- Email/password + OAuth (GitHub, Google)
+- API key generation and management for MCP clients
+- Rate limiting by tier
+- **Priority**: HIGH
+- **Prerequisites**: 14 Section 3 complete
+- **Reference**: OWASP guidelines, Workplan 14
+- **Tasks**: 80+ (across 9 sections)
+- **Estimated Effort**: 8-12 hours
+
+**[16-WORKPLAN.md](16-WORKPLAN.md)** - SDK Development (v1.0.0) - **NEW**
+- Create memorygraphsdk Python package
+- LangChain, CrewAI, AutoGen integrations
+- Publish to PyPI
+- **Priority**: HIGH (Competitive Differentiation vs Cipher)
+- **Prerequisites**: 14-15 complete
+- **Reference**: PRODUCT_ROADMAP.md Phase 3.4
+- **Tasks**: 60+ (across 8 sections)
+- **Estimated Effort**: 12-16 hours
+
+**[17-WORKPLAN.md](17-WORKPLAN.md)** - memorygraph.dev Website (v1.0.0) - **NEW**
+- Build marketing website with retro-terminal aesthetic
+- Landing page, pricing, docs, comparison page
+- Merge content from 7-WEBSITE-WORKPLAN (deprecated)
+- **Priority**: HIGH
+- **Prerequisites**: Domain registered, 14 Section 2 complete
+- **Reference**: 7-WEBSITE-WORKPLAN (deprecated), Workplan 14
+- **Tasks**: 90+ (across 10 sections)
+- **Estimated Effort**: 12-16 hours
+- **Note**: Supersedes 7-WEBSITE-WORKPLAN.md
+
+### v1.1.0 Features - NEW (Post-Launch)
+
+**[18-WORKPLAN.md](18-WORKPLAN.md)** - Real-Time Team Sync (v1.1.0) - **NEW**
+- Real-time memory synchronization using SSE or WebSockets
+- Cloud-native sync (vs Cipher's manual `brv pull`)
+- Team workspaces and collaboration
+- **Priority**: MEDIUM (Post-Launch Feature)
+- **Prerequisites**: 14-15 complete, team tier launched
+- **Reference**: PRODUCT_ROADMAP.md Phase 4
+- **Tasks**: 80+ (across 10 sections)
+- **Estimated Effort**: 16-24 hours
+
 ### Future (Strategic Features)
 
 **[6-WORKPLAN.md](6-WORKPLAN.md)** - Multi-Tenancy Phase 1
@@ -119,28 +190,50 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Reference**: [ADR 009](../adr/009-multi-tenant-team-memory-sharing.md)
 - **Tasks**: 25
 
+### Deprecated Workplans
+
+**[7-WEBSITE-WORKPLAN.md](7-WEBSITE-WORKPLAN.md)** - ❌ **DEPRECATED**
+- Website design and planning
+- **Status**: Content merged into 17-WORKPLAN.md
+- **Do not use**: Refer to 17-WORKPLAN.md instead
+
+**[8-WORKPLAN.md](8-WORKPLAN.md)** - Claude Code Web Support via Project Hooks - **COMPLETE** ✅
+- Auto-install MemoryGraph in remote environments
+- Project hooks for Claude Code Web
+- Cloud backend detection
+- **Status**: COMPLETE (implementation exists)
+- **Prerequisites**: Cloud backend when available
+- **Tasks**: Complete
+
 ---
 
 ## Execution Recommendations
 
 ### For Coding Agents
 
-**Sequential Execution**:
-1. Start with 1-WORKPLAN (critical)
-2. Proceed to 2-WORKPLAN (tests)
-3. Work on 3-WORKPLAN (quality)
-4. Execute 4-WORKPLAN (refactoring)
-5. Consider 5-WORKPLAN (features) if needed
-6. Defer 6-WORKPLAN until multi-tenancy is prioritized
+**v0.10.0 Track (Competitive Features)**:
+1. Start with **12-WORKPLAN** (Semantic Navigation) - validates our graph-first approach
+2. Then **13-WORKPLAN** (Bi-Temporal Schema) - learn from Graphiti
+3. Release v0.10.0 with both features
+
+**v1.0.0 Track (Cloud Launch)**:
+1. Start with **14-WORKPLAN** (Cloud Infrastructure) - foundation for everything
+2. Then **15-WORKPLAN** (Authentication) - critical for cloud
+3. Parallel: **16-WORKPLAN** (SDK) and **17-WORKPLAN** (Website)
+4. Release v1.0.0 with cloud platform live
+
+**v1.1.0 Track (Team Features)**:
+1. After v1.0.0 launched, work on **18-WORKPLAN** (Team Sync)
+2. Release v1.1.0 with real-time collaboration
 
 **Parallel Execution**:
 - **0-WORKPLAN-MARKETING**: Can run in parallel with ALL development work
-- 2-WORKPLAN and 3-WORKPLAN can be worked on in parallel (after 1-WORKPLAN)
-- 4-WORKPLAN requires some progress on 2 and 3
-- 5-WORKPLAN requires 1-3 completed
-- 6-WORKPLAN requires 1-4 completed
+- **16-WORKPLAN** and **17-WORKPLAN**: Can be worked on in parallel
+- **6-WORKPLAN**: Defer until multi-tenancy is needed (enterprise customers)
 
-### Dependency Graph
+---
+
+## Dependency Graph
 
 ```
 0-WORKPLAN-MARKETING (parallel track, ongoing)
@@ -156,45 +249,88 @@ Workplans are numbered and organized for sequential execution by coding agents. 
     └─────→ 4-WORKPLAN (Refactoring) ✅ COMPLETE             │
                 ↓                                            │
             5-WORKPLAN (New Features) ✅ COMPLETE ←──────────┘
-                ↓                    (marketing drives feedback)
+                ↓
                 ├─→ 9-WORKPLAN (Universal Export) ✅ SUBSTANTIALLY COMPLETE
                 │       ↓
                 │   10-WORKPLAN (Migration Manager) ✅ CORE COMPLETE
                 │       ↓
                 │   11-WORKPLAN (MCP Tools) ✅ TOOLS COMPLETE
                 │
+                ├─→ 12-WORKPLAN (Semantic Navigation) [v0.10.0] NEW
+                │       ↓
+                │   13-WORKPLAN (Bi-Temporal Schema) [v0.10.0] NEW
+                │
+                ├─→ 14-WORKPLAN (Cloud Infrastructure) [v1.0.0] NEW
+                │       ↓
+                │   15-WORKPLAN (Authentication) [v1.0.0] NEW
+                │       ↓
+                │   ├─→ 16-WORKPLAN (SDK Development) [v1.0.0] NEW
+                │   │
+                │   ├─→ 17-WORKPLAN (Website) [v1.0.0] NEW (merges 7-WEBSITE)
+                │   │
+                │   └─→ 18-WORKPLAN (Team Sync) [v1.1.0] NEW
+                │
                 └─→ 6-WORKPLAN (Multi-Tenancy) [FUTURE]
 ```
 
 ---
 
+## Version Roadmap
+
+### v0.9.6 (Current - Released)
+- Foundation complete (1-5, 9-11)
+- 1,200 tests passing
+- Migration system working
+- **Status**: ✅ Released
+
+### v0.10.0 (Next - Competitive Features)
+- **12-WORKPLAN**: Semantic Navigation Tools
+- **13-WORKPLAN**: Bi-Temporal Schema
+- **Target**: Q1 2026
+- **Focus**: Close gaps with Cipher and Graphiti
+
+### v1.0.0 (Cloud Launch)
+- **14-WORKPLAN**: Cloud Infrastructure
+- **15-WORKPLAN**: Authentication & API Keys
+- **16-WORKPLAN**: SDK Development
+- **17-WORKPLAN**: Website (merges 7-WEBSITE)
+- **Target**: Q2 2026
+- **Focus**: Launch memorygraph.dev
+
+### v1.1.0 (Team Features)
+- **18-WORKPLAN**: Real-Time Team Sync
+- **Target**: Q3 2026
+- **Focus**: Enterprise collaboration
+
+### v1.2.0+ (Future)
+- **6-WORKPLAN**: Multi-Tenancy
+- Additional features based on user feedback
+
+---
+
 ## Metrics Summary
 
-### Total Work Status (as of 2025-12-04)
-- **Total Tasks**: 200+ tasks across 12 workplans
-- **Completed Tasks**: ~140 tasks (workplans 1-5, 9-11 core)
+### Total Work Status (as of 2025-12-05)
+- **Total Workplans**: 18 active + 1 deprecated
+- **Completed Workplans**: 8 (1-5, 8-11 core)
+- **New Workplans**: 7 (12-18)
 - **Test Suite**: 1,200 tests passing (up from 890)
 - **Coverage**: Maintained/improved (server.py significantly improved)
 
-### Priority Breakdown - ACTUAL STATUS
+### Priority Breakdown - UPDATED
 - **Marketing** (parallel): 25+ tasks (0-WORKPLAN-MARKETING) - IN PROGRESS
-- **Critical** (COMPLETE ✅): 12 tasks (1-WORKPLAN)
-- **High** (COMPLETE ✅): 65 tasks (2-WORKPLAN, 3-WORKPLAN core)
-- **Medium** (COMPLETE ✅): 20 tasks (4-WORKPLAN)
-- **Low** (COMPLETE ✅): 22 tasks (5-WORKPLAN)
-- **Migration** (SUBSTANTIALLY COMPLETE ✅): 68 tasks (9-11 WORKPLAN core)
+- **Foundation** (COMPLETE ✅): 130+ tasks (1-5, 9-11 WORKPLAN)
+- **v0.10.0 Features** (NEW): 130+ tasks (12-13 WORKPLAN)
+- **v1.0.0 Launch** (NEW): 330+ tasks (14-17 WORKPLAN)
+- **v1.1.0 Features** (NEW): 80+ tasks (18 WORKPLAN)
 - **Future** (NOT STARTED): 25 tasks (6-WORKPLAN)
+- **Deprecated**: 7-WEBSITE-WORKPLAN (merged into 17)
 
-### Coverage Achievements
-- **Before**: server.py 49%, Memgraph 28%, 890 tests
-- **After**: server.py coverage improved, 1,200 tests passing
-- **Growth**: +310 tests (+35% increase)
-
-### Code Reduction - ACHIEVED
-- **Before**: server.py 1,502 lines
-- **After**: server.py 873 lines (42% reduction)
-- **Target**: <500 lines (exceeded expectations at 873)
-- **Extraction**: 5 new tool modules (memory, relationship, search, activity, migration)
+### Estimated Effort
+- **v0.10.0**: 20-28 hours (12-13 WORKPLAN)
+- **v1.0.0**: 48-68 hours (14-17 WORKPLAN)
+- **v1.1.0**: 16-24 hours (18 WORKPLAN)
+- **Total new work**: 84-120 hours
 
 ---
 
@@ -203,9 +339,13 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 ### Product Roadmap Alignment
 
 These workplans align with [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md):
+- **Phase 0: Competitive Response** (NEW): Marketing, differentiation (0-WORKPLAN)
 - **Phase 1-2** (COMPLETE ✅): Quality and testing (1-5 workplans)
 - **Phase 2.5** (SUBSTANTIALLY COMPLETE ✅): Universal export and migration (9-11 workplans)
-- **Phase 3-4** (FUTURE): Cloud sync and multi-tenancy (6-WORKPLAN, see roadmap)
+- **Phase 2 (NEW)**: Semantic Navigation + Bi-Temporal (12-13 workplans)
+- **Phase 3 (NEW)**: Cloud Launch (14-17 workplans)
+- **Phase 4 (NEW)**: Team Features (18 workplan)
+- **Phase 5 (FUTURE)**: Multi-tenancy (6 workplan)
 
 ### Architecture Decision Records
 
@@ -215,12 +355,15 @@ Implemented ADRs:
 - [ADR 012](../adr/012-cycle-detection.md): Cycle detection strategy (5-WORKPLAN) ✅
 - [ADR 015](../adr/015-universal-export-migration.md): Universal export and backend migration (9-11 WORKPLAN) ✅
 
-Future ADRs:
-- [ADR 009](../adr/009-multi-tenant-team-memory-sharing.md): Multi-Tenant Team Memory Sharing (6-WORKPLAN)
+Planned ADRs:
+- [ADR 016](../adr/016-bi-temporal-tracking.md): Bi-temporal tracking (13-WORKPLAN) - TO BE CREATED
+- [ADR 009](../adr/009-multi-tenant-team-memory-sharing.md): Multi-Tenant Team Memory Sharing (6-WORKPLAN) - FUTURE
 
-## Completion Summary (2025-12-04)
+---
 
-### What Was Accomplished
+## Completion Summary (2025-12-05 Update)
+
+### What Was Accomplished (v0.9.x)
 
 **Foundation (Workplans 1-5)** - ALL COMPLETE ✅
 1. ✅ Fixed 2,379 datetime deprecation warnings
@@ -241,22 +384,23 @@ Future ADRs:
 5. ✅ 7 migration tool tests passing
 6. ✅ SQLite backend fully tested
 
-### What Remains
+**Claude Code Web Support (Workplan 8)** - COMPLETE ✅
+1. ✅ Project hooks for auto-installation
+2. ✅ Cloud backend detection
 
-**Migration System - Phase 2** (Optional enhancements):
-- Full multi-backend testing (Neo4j, Memgraph, FalkorDB)
-- Performance benchmarks (10k+ memories)
-- Comprehensive migration documentation
-- Migration examples and guides
+### What's New (2025-12-05)
 
-**Marketing** (0-WORKPLAN) - Ongoing:
-- MCPB bundle submission to Anthropic
-- Community outreach (Reddit, HN, Twitter)
-- Documentation polish
+**7 New Workplans Created**:
+1. ✅ 12-WORKPLAN: Semantic Navigation Tools (v0.10.0)
+2. ✅ 13-WORKPLAN: Bi-Temporal Schema (v0.10.0)
+3. ✅ 14-WORKPLAN: Cloud Infrastructure - LOW COST (v1.0.0)
+4. ✅ 15-WORKPLAN: Authentication & API Keys (v1.0.0)
+5. ✅ 16-WORKPLAN: SDK Development (v1.0.0)
+6. ✅ 17-WORKPLAN: memorygraph.dev Website (v1.0.0) - merges 7-WEBSITE
+7. ✅ 18-WORKPLAN: Real-Time Team Sync (v1.1.0)
 
-**Future Features**:
-- Multi-tenancy (6-WORKPLAN) - not yet started
-- Additional workplans (7, 8) - to be reviewed
+**1 Workplan Deprecated**:
+- ❌ 7-WEBSITE-WORKPLAN: Content merged into 17-WORKPLAN
 
 ### Current State
 
@@ -264,7 +408,56 @@ Future ADRs:
 **Test Count**: 1,200 passing
 **Code Quality**: Significantly improved
 **Migration**: Core functionality ready for production use
-**Next Focus**: Marketing, community growth, and competitive response (per PRODUCT_ROADMAP.md Phase 0)
+**Next Focus**: v0.10.0 features (Semantic Navigation + Bi-Temporal)
+**Cloud Launch**: Planned for v1.0.0
+
+---
+
+## Recommendations for Next Steps
+
+Based on the current state and [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md):
+
+### Immediate (v0.10.0)
+1. **12-WORKPLAN**: Semantic Navigation Tools
+   - Validates our graph-first approach (Cipher abandoned vectors)
+   - 6 new navigation tools
+   - No embedding dependencies
+
+2. **13-WORKPLAN**: Bi-Temporal Schema
+   - Learn from Graphiti's proven model
+   - Track knowledge evolution
+   - Point-in-time queries
+
+### Short-term (v1.0.0)
+1. **14-WORKPLAN**: Cloud Infrastructure
+   - Deploy memorygraph.dev
+   - Low-cost architecture (<$50/month)
+   - Compete with Byterover.dev
+
+2. **15-WORKPLAN**: Authentication
+   - Email/password + OAuth
+   - API key management
+   - Rate limiting
+
+3. **16-WORKPLAN**: SDK
+   - LangChain, CrewAI, AutoGen integrations
+   - Differentiate from Cipher (MCP-only)
+
+4. **17-WORKPLAN**: Website
+   - Retro-terminal aesthetic
+   - Comparison page (vs Cipher, Graphiti)
+   - Pricing and documentation
+
+### Medium-term (v1.1.0)
+1. **18-WORKPLAN**: Real-Time Team Sync
+   - Cloud-native sync (vs Cipher's manual pull)
+   - Team workspaces
+   - Activity feed
+
+### Long-term (v1.2.0+)
+1. **6-WORKPLAN**: Multi-Tenancy
+   - Enterprise features
+   - When needed based on customer demand
 
 ---
 
@@ -274,7 +467,7 @@ Old workplans moved to `/docs/archive/`:
 - `WORKPLAN_2025-12-02.md` (75KB, comprehensive original)
 - `2-WORKPLAN_CODE_QUALITY_2025-12-02.md` (21KB, code review findings)
 
-These are superseded by the new numbered workplans above.
+These are superseded by the new numbered workplans.
 
 ---
 
@@ -284,57 +477,38 @@ These are superseded by the new numbered workplans above.
 - Use this index to understand scope and priorities
 - Track progress by checking completion of workplans
 - Adjust priority based on business needs
+- v0.10.0 focuses on competitive features
+- v1.0.0 focuses on cloud launch
+- v1.1.0 focuses on team collaboration
 
 ### For Developers
-- Start with 1-WORKPLAN before others
+- Start with workplan prerequisites
 - Update checkboxes as you complete tasks
 - Run full test suite between workplans
-- Create feature branches for major refactoring (4-WORKPLAN)
+- Create feature branches for major work
+- All file paths are absolute for clarity
+- Test before committing
 
 ### For Contributors
 - Refer to individual workplans for detailed task lists
 - All file paths are absolute for clarity
 - Tests should be written before implementation (TDD approach)
 - Each workplan has clear acceptance criteria
+- New workplans are optimized for coding agents
 
 ---
 
 ## Questions?
 
-- **Not sure where to start?** Begin with 1-WORKPLAN.md
-- **Need strategic context?** Review [PRODUCT_ROADMAP.md](planning/PRODUCT_ROADMAP.md)
-- **Want to understand multi-tenancy?** Read [ADR 009](adr/009-multi-tenant-team-memory-sharing.md)
+- **Not sure where to start?** Begin with 12-WORKPLAN.md (Semantic Navigation)
+- **Need strategic context?** Review [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md)
+- **Want to understand multi-tenancy?** Read [ADR 009](../adr/009-multi-tenant-team-memory-sharing.md)
 - **Looking for completed work?** Check `/docs/archive/`
+- **Website content?** See 17-WORKPLAN.md (7-WEBSITE-WORKPLAN deprecated)
 
 ---
 
-## Recommendations for Next Steps
-
-Based on the current state and [PRODUCT_ROADMAP.md](PRODUCT_ROADMAP.md), recommended priorities:
-
-1. **Phase 0: Competitive Response** (IMMEDIATE - from roadmap)
-   - Execute 0-WORKPLAN-MARKETING tasks
-   - Apache 2.0 license differentiation campaign
-   - Smithery marketplace listing
-   - Comparison page (vs Cipher, Graphiti)
-
-2. **Phase 1: Launch & Community** (Weeks 3-5 - from roadmap)
-   - Community building (Discord, Reddit, HN)
-   - Demo content (video, GIFs)
-   - Documentation polish
-
-3. **Optional: Migration Phase 2** (if needed)
-   - Complete deferred items from 9-11 workplans
-   - Full backend-pair testing
-   - Performance benchmarks
-   - Migration guides
-
-4. **Future: Multi-Tenancy** (v1.0.0+)
-   - 6-WORKPLAN when enterprise features needed
-
----
-
-**Last Updated**: 2025-12-04
+**Last Updated**: 2025-12-05
 **Maintainer**: Gregory Dickson
-**Status**: Foundation complete - focus shifting to marketing and growth
-**Version**: v0.9.6 released, migration system ready
+**Status**: v0.9.6 released, v0.10.0 and v1.0.0 planned
+**New Workplans**: 12-18 created for competitive features and cloud launch

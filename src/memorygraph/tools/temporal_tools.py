@@ -10,19 +10,37 @@ This module contains handlers for temporal operations:
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List, TypedDict, Optional
 
 from mcp.types import CallToolResult, TextContent
 
 from ..database import MemoryDatabase
 from ..models import RelationshipType
 
+
+class QueryAsOfArgs(TypedDict, total=False):
+    """Arguments for query_as_of tool."""
+    memory_id: str
+    as_of: str
+    relationship_types: Optional[List[str]]
+
+
+class GetRelationshipHistoryArgs(TypedDict, total=False):
+    """Arguments for get_relationship_history tool."""
+    memory_id: str
+    relationship_types: Optional[List[str]]
+
+
+class WhatChangedArgs(TypedDict, total=False):
+    """Arguments for what_changed tool."""
+    since: str
+
 logger = logging.getLogger(__name__)
 
 
 async def handle_query_as_of(
     memory_db: MemoryDatabase,
-    arguments: Dict[str, Any]
+    arguments: QueryAsOfArgs
 ) -> CallToolResult:
     """Handle query_as_of tool call for point-in-time queries.
 
@@ -39,6 +57,17 @@ async def handle_query_as_of(
     try:
         memory_id = arguments["memory_id"]
         as_of_str = arguments["as_of"]
+
+        # Check if memory exists
+        memory = await memory_db.get_memory(memory_id)
+        if not memory:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Memory not found: {memory_id}"
+                )],
+                isError=True
+            )
 
         # Parse ISO 8601 timestamp
         try:
@@ -109,7 +138,7 @@ async def handle_query_as_of(
 
 async def handle_get_relationship_history(
     memory_db: MemoryDatabase,
-    arguments: Dict[str, Any]
+    arguments: GetRelationshipHistoryArgs
 ) -> CallToolResult:
     """Handle get_relationship_history tool call.
 
@@ -124,6 +153,17 @@ async def handle_get_relationship_history(
     """
     try:
         memory_id = arguments["memory_id"]
+
+        # Check if memory exists
+        memory = await memory_db.get_memory(memory_id)
+        if not memory:
+            return CallToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=f"Memory not found: {memory_id}"
+                )],
+                isError=True
+            )
 
         # Get optional relationship type filter
         relationship_types = None
@@ -164,7 +204,8 @@ async def handle_get_relationship_history(
                         context = json.loads(rel.properties.context)
                         if context.get('summary'):
                             results_text += f"Context: {context['summary']}\n"
-                    except (json.JSONDecodeError, KeyError):
+                    except (json.JSONDecodeError, KeyError, TypeError):
+                        # Malformed or non-JSON context, skip
                         pass
                 results_text += "\n"
 
@@ -204,7 +245,7 @@ async def handle_get_relationship_history(
 
 async def handle_what_changed(
     memory_db: MemoryDatabase,
-    arguments: Dict[str, Any]
+    arguments: WhatChangedArgs
 ) -> CallToolResult:
     """Handle what_changed tool call.
 
@@ -260,7 +301,8 @@ async def handle_what_changed(
                         context = json.loads(rel.properties.context)
                         if context.get('summary'):
                             results_text += f"Context: {context['summary']}\n"
-                    except (json.JSONDecodeError, KeyError):
+                    except (json.JSONDecodeError, KeyError, TypeError):
+                        # Malformed or non-JSON context, skip
                         pass
                 results_text += "\n"
 

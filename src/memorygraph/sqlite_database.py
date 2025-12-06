@@ -980,7 +980,15 @@ class SQLiteMemoryDatabase:
             if 'context' in kwargs:
                 properties.context = kwargs['context']
             if 'valid_from' in kwargs:
-                properties.valid_from = kwargs['valid_from']
+                valid_from_value = kwargs['valid_from']
+                if not isinstance(valid_from_value, datetime):
+                    raise ValidationError(
+                        "valid_from must be a datetime object",
+                        {"provided": type(valid_from_value).__name__}
+                    )
+                if valid_from_value > datetime.now(timezone.utc):
+                    logger.warning(f"valid_from is in the future: {valid_from_value.isoformat()}")
+                properties.valid_from = valid_from_value
 
             # Convert properties to dict
             props_dict = properties.model_dump()
@@ -1232,7 +1240,9 @@ class SQLiteMemoryDatabase:
     async def get_relationship_history(
         self,
         memory_id: str,
-        relationship_types: List[RelationshipType] = None
+        relationship_types: List[RelationshipType] = None,
+        limit: int = 100,
+        offset: int = 0
     ) -> List[Relationship]:
         """
         Get full history of relationships for a memory, including invalidated ones.
@@ -1240,6 +1250,8 @@ class SQLiteMemoryDatabase:
         Args:
             memory_id: ID of the memory to get history for
             relationship_types: Optional filter by relationship types
+            limit: Maximum number of results to return (default: 100)
+            offset: Number of results to skip for pagination (default: 0)
 
         Returns:
             List of Relationship objects, ordered chronologically by valid_from
@@ -1274,9 +1286,10 @@ class SQLiteMemoryDatabase:
                 FROM relationships r
                 WHERE {where_clause}
                 ORDER BY r.valid_from ASC
+                LIMIT ? OFFSET ?
             """
 
-            params_query = [memory_id, memory_id] + params[2:]
+            params_query = [memory_id, memory_id] + params[2:] + [limit, offset]
             result = self.backend.execute_sync(query, tuple(params_query))
 
             relationships = []

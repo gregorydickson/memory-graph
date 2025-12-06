@@ -17,7 +17,9 @@ Usage:
     await rollback_from_multitenant(backend)
 """
 
+import json
 import logging
+import re
 from typing import Optional
 from ...backends.base import GraphBackend
 from ...backends.sqlite_fallback import SQLiteFallbackBackend
@@ -64,12 +66,26 @@ async def migrate_to_multitenant(
         >>> result = await migrate_to_multitenant(backend, tenant_id="acme-corp")
         >>> print(f"Updated {result['memories_updated']} memories")
     """
-    if not backend or not backend.is_connected():
+    # Check backend connection (use _connected attribute for SQLite backends)
+    is_connected = getattr(backend, '_connected', False)
+    if not backend or not is_connected:
         raise DatabaseConnectionError("Backend must be connected before migration")
 
+    # Validate tenant_id is not empty
     if not tenant_id or not tenant_id.strip():
         raise ValueError("tenant_id cannot be empty")
 
+    # Validate tenant_id format (alphanumeric, dashes, underscores only)
+    if not re.match(r'^[a-zA-Z0-9-_]+$', tenant_id):
+        raise ValueError(
+            "tenant_id must contain only alphanumeric characters, dashes, and underscores"
+        )
+
+    # Validate tenant_id length
+    if len(tenant_id) > 64:
+        raise ValueError("tenant_id must be 64 characters or less")
+
+    # Validate visibility value
     valid_visibility = ["private", "project", "team", "public"]
     if visibility not in valid_visibility:
         raise ValueError(f"visibility must be one of {valid_visibility}, got '{visibility}'")
@@ -81,13 +97,15 @@ async def migrate_to_multitenant(
     memories_updated = 0
 
     try:
-        # SQLite-based backends (SQLite, Turso)
-        if isinstance(backend, (SQLiteFallbackBackend, TursoBackend)):
+        # SQLite-based backends (SQLite, Turso) - use duck typing to avoid
+        # isinstance issues when modules are reloaded during testing.
+        # SQLite backends have a 'conn' attribute for the database connection.
+        if hasattr(backend, 'conn') and backend.conn is not None:
             memories_updated = await _migrate_sqlite_backend(
                 backend, tenant_id, visibility, dry_run
             )
 
-        # Neo4j/Memgraph backends
+        # Neo4j/Memgraph backends - use execute_query method
         elif hasattr(backend, 'execute_query'):
             memories_updated = await _migrate_graph_backend(
                 backend, tenant_id, visibility, dry_run
@@ -129,6 +147,9 @@ async def _migrate_sqlite_backend(
     """
     Migrate SQLite-based backend to multi-tenant mode.
 
+    The properties are stored in a flat structure with context fields prefixed
+    with 'context_' (e.g., 'context_tenant_id', 'context_visibility').
+
     Args:
         backend: SQLite backend instance
         tenant_id: Tenant ID to assign
@@ -140,13 +161,14 @@ async def _migrate_sqlite_backend(
     """
     cursor = backend.conn.cursor()
 
-    # Count memories without tenant_id
+    # Count memories without tenant_id (using flat property structure)
+    # Properties use 'context_tenant_id' not 'context.tenant_id'
     cursor.execute("""
         SELECT COUNT(*) FROM nodes
         WHERE label = 'Memory'
         AND (
-            json_extract(properties, '$.context.tenant_id') IS NULL
-            OR json_extract(properties, '$.context.tenant_id') = ''
+            json_extract(properties, '$.context_tenant_id') IS NULL
+            OR json_extract(properties, '$.context_tenant_id') = ''
         )
     """)
 
@@ -163,25 +185,20 @@ async def _migrate_sqlite_backend(
         SELECT id, properties FROM nodes
         WHERE label = 'Memory'
         AND (
-            json_extract(properties, '$.context.tenant_id') IS NULL
-            OR json_extract(properties, '$.context.tenant_id') = ''
+            json_extract(properties, '$.context_tenant_id') IS NULL
+            OR json_extract(properties, '$.context_tenant_id') = ''
         )
     """)
 
-    import json
     updated = 0
 
     for row in cursor.fetchall():
         node_id = row[0]
         properties = json.loads(row[1])
 
-        # Ensure context exists
-        if 'context' not in properties or properties['context'] is None:
-            properties['context'] = {}
-
-        # Set tenant_id and visibility
-        properties['context']['tenant_id'] = tenant_id
-        properties['context']['visibility'] = visibility
+        # Set tenant_id and visibility using flat property structure
+        properties['context_tenant_id'] = tenant_id
+        properties['context_visibility'] = visibility
 
         # Update the node
         cursor.execute("""
@@ -276,7 +293,9 @@ async def rollback_from_multitenant(
         >>> result = await rollback_from_multitenant(backend)
         >>> print(f"Rolled back {result['memories_updated']} memories")
     """
-    if not backend or not backend.is_connected():
+    # Check backend connection (use _connected attribute for SQLite backends)
+    is_connected = getattr(backend, '_connected', False)
+    if not backend or not is_connected:
         raise DatabaseConnectionError("Backend must be connected before rollback")
 
     logger.info(f"Starting multi-tenancy rollback (dry_run={dry_run})")
@@ -285,11 +304,11 @@ async def rollback_from_multitenant(
     memories_updated = 0
 
     try:
-        # SQLite-based backends
-        if isinstance(backend, (SQLiteFallbackBackend, TursoBackend)):
+        # SQLite-based backends - use duck typing (check for conn attribute)
+        if hasattr(backend, 'conn') and backend.conn is not None:
             memories_updated = await _rollback_sqlite_backend(backend, dry_run)
 
-        # Graph backends
+        # Graph backends - use execute_query method
         elif hasattr(backend, 'execute_query'):
             memories_updated = await _rollback_graph_backend(backend, dry_run)
 
@@ -323,6 +342,9 @@ async def _rollback_sqlite_backend(
     """
     Rollback SQLite backend from multi-tenant mode.
 
+    The properties are stored in a flat structure with context fields prefixed
+    with 'context_' (e.g., 'context_tenant_id', 'context_visibility').
+
     Args:
         backend: SQLite backend instance
         dry_run: If True, only count without updating
@@ -332,11 +354,12 @@ async def _rollback_sqlite_backend(
     """
     cursor = backend.conn.cursor()
 
-    # Count memories with tenant_id
+    # Count memories with tenant_id (using flat property structure)
     cursor.execute("""
         SELECT COUNT(*) FROM nodes
         WHERE label = 'Memory'
-        AND json_extract(properties, '$.context.tenant_id') IS NOT NULL
+        AND json_extract(properties, '$.context_tenant_id') IS NOT NULL
+        AND json_extract(properties, '$.context_tenant_id') != ''
     """)
 
     count = cursor.fetchone()[0]
@@ -350,21 +373,20 @@ async def _rollback_sqlite_backend(
     cursor.execute("""
         SELECT id, properties FROM nodes
         WHERE label = 'Memory'
-        AND json_extract(properties, '$.context.tenant_id') IS NOT NULL
+        AND json_extract(properties, '$.context_tenant_id') IS NOT NULL
+        AND json_extract(properties, '$.context_tenant_id') != ''
     """)
 
-    import json
     updated = 0
 
     for row in cursor.fetchall():
         node_id = row[0]
         properties = json.loads(row[1])
 
-        # Clear tenant_id (set to NULL)
-        if 'context' in properties and properties['context']:
-            properties['context']['tenant_id'] = None
-            # Optionally reset visibility to default
-            properties['context']['visibility'] = 'project'
+        # Clear tenant_id (set to NULL) using flat property structure
+        properties['context_tenant_id'] = None
+        # Reset visibility to default
+        properties['context_visibility'] = 'project'
 
         # Update the node
         cursor.execute("""
