@@ -295,7 +295,7 @@ class RelationshipProperties(BaseModel):
     """Properties for relationships between memories.
 
     Stores metadata about the relationship including strength,
-    confidence, validation history, and evidence tracking.
+    confidence, validation history, evidence tracking, and bi-temporal fields.
 
     Attributes:
         strength: Relationship strength from 0.0 to 1.0 (default 0.5)
@@ -307,6 +307,10 @@ class RelationshipProperties(BaseModel):
         last_validated: Timestamp when relationship was last validated
         validation_count: Number of times this relationship has been validated
         counter_evidence_count: Number of times counter-evidence was found
+        valid_from: When the fact became true (validity time)
+        valid_until: When the fact stopped being true (None = still valid)
+        recorded_at: When we learned this fact (transaction time)
+        invalidated_by: ID of relationship that superseded this one
     """
 
     strength: float = Field(default=0.5, ge=0.0, le=1.0)
@@ -318,6 +322,24 @@ class RelationshipProperties(BaseModel):
     last_validated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     validation_count: int = Field(default=0, ge=0)
     counter_evidence_count: int = Field(default=0, ge=0)
+
+    # Bi-temporal tracking fields (Phase 2.2)
+    valid_from: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When the fact became true (validity time)"
+    )
+    valid_until: Optional[datetime] = Field(
+        None,
+        description="When the fact stopped being true (None = still valid)"
+    )
+    recorded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="When we learned this fact (transaction time)"
+    )
+    invalidated_by: Optional[str] = Field(
+        None,
+        description="ID of relationship that superseded this one"
+    )
 
 
 class Relationship(BaseModel):

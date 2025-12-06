@@ -942,16 +942,22 @@ class SQLiteMemoryDatabase:
         from_memory_id: str,
         to_memory_id: str,
         relationship_type: RelationshipType,
-        properties: RelationshipProperties = None
+        properties: RelationshipProperties = None,
+        **kwargs
     ) -> str:
         """
-        Create a relationship between two memories.
+        Create a relationship between two memories with bi-temporal tracking.
 
         Args:
             from_memory_id: Source memory ID
             to_memory_id: Target memory ID
             relationship_type: Type of relationship
             properties: Relationship properties (optional)
+            **kwargs: Additional parameters including:
+                - valid_from: When the fact became true (defaults to now)
+                - strength: Relationship strength (0.0-1.0)
+                - confidence: Confidence level (0.0-1.0)
+                - context: Optional context string
 
         Returns:
             ID of the created relationship
@@ -966,11 +972,27 @@ class SQLiteMemoryDatabase:
             if properties is None:
                 properties = RelationshipProperties()
 
+            # Override property fields from kwargs if provided
+            if 'strength' in kwargs:
+                properties.strength = kwargs['strength']
+            if 'confidence' in kwargs:
+                properties.confidence = kwargs['confidence']
+            if 'context' in kwargs:
+                properties.context = kwargs['context']
+            if 'valid_from' in kwargs:
+                properties.valid_from = kwargs['valid_from']
+
             # Convert properties to dict
             props_dict = properties.model_dump()
             props_dict['id'] = relationship_id
             props_dict['created_at'] = props_dict['created_at'].isoformat()
             props_dict['last_validated'] = props_dict['last_validated'].isoformat()
+
+            # Handle temporal fields
+            props_dict['valid_from'] = props_dict['valid_from'].isoformat()
+            props_dict['recorded_at'] = props_dict['recorded_at'].isoformat()
+            if props_dict.get('valid_until'):
+                props_dict['valid_until'] = props_dict['valid_until'].isoformat()
 
             # Serialize properties as JSON
             properties_json = json.dumps(props_dict)
@@ -1011,13 +1033,23 @@ class SQLiteMemoryDatabase:
                         }
                     )
 
-            # Insert relationship
+            # Insert relationship with temporal fields
             self.backend.execute_sync(
                 """
-                INSERT INTO relationships (id, from_id, to_id, rel_type, properties, created_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT INTO relationships (
+                    id, from_id, to_id, rel_type, properties, created_at,
+                    valid_from, valid_until, recorded_at, invalidated_by
+                )
+                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?)
                 """,
-                (relationship_id, from_memory_id, to_memory_id, relationship_type.value, properties_json)
+                (
+                    relationship_id, from_memory_id, to_memory_id,
+                    relationship_type.value, properties_json,
+                    props_dict['valid_from'],
+                    props_dict.get('valid_until'),
+                    props_dict['recorded_at'],
+                    props_dict.get('invalidated_by')
+                )
             )
 
             self.backend.commit()
@@ -1035,15 +1067,17 @@ class SQLiteMemoryDatabase:
         self,
         memory_id: str,
         relationship_types: List[RelationshipType] = None,
-        max_depth: int = 2
+        max_depth: int = 2,
+        as_of: datetime = None
     ) -> List[Tuple[Memory, Relationship]]:
         """
-        Get memories related to a specific memory.
+        Get memories related to a specific memory, with optional point-in-time query.
 
         Args:
             memory_id: ID of the memory to find relations for
             relationship_types: Filter by specific relationship types (optional)
             max_depth: Maximum depth for graph traversal (currently only supports depth 1)
+            as_of: Optional datetime for point-in-time query (defaults to current time)
 
         Returns:
             List of tuples containing (Memory, Relationship)
@@ -1055,6 +1089,17 @@ class SQLiteMemoryDatabase:
             # Build relationship type filter
             where_conditions = ["(r.from_id = ? OR r.to_id = ?)"]
             params = [memory_id, memory_id]
+
+            # Add temporal filter for current or point-in-time query
+            if as_of is None:
+                # Default: only current relationships (valid_until IS NULL)
+                where_conditions.append("r.valid_until IS NULL")
+            else:
+                # Point-in-time query
+                where_conditions.append("r.valid_from <= ?")
+                where_conditions.append("(r.valid_until IS NULL OR r.valid_until > ?)")
+                as_of_str = as_of.isoformat()
+                params.extend([as_of_str, as_of_str])
 
             if relationship_types:
                 type_placeholders = ','.join('?' * len(relationship_types))
@@ -1133,6 +1178,280 @@ class SQLiteMemoryDatabase:
                 raise
             logger.error(f"Failed to get related memories for {memory_id}: {e}")
             raise DatabaseConnectionError(f"Failed to get related memories: {e}")
+
+    async def invalidate_relationship(
+        self,
+        relationship_id: str,
+        invalidated_by: str = None
+    ) -> None:
+        """
+        Invalidate a relationship by setting valid_until to now.
+
+        Args:
+            relationship_id: ID of the relationship to invalidate
+            invalidated_by: Optional ID of relationship that supersedes this one
+
+        Raises:
+            RelationshipError: If relationship not found
+            DatabaseConnectionError: If database operation fails
+        """
+        try:
+            # Check if relationship exists
+            result = self.backend.execute_sync(
+                "SELECT id FROM relationships WHERE id = ?",
+                (relationship_id,)
+            )
+
+            if not result:
+                raise RelationshipError(
+                    f"Relationship not found: {relationship_id}",
+                    {"relationship_id": relationship_id}
+                )
+
+            # Set valid_until to now
+            now = datetime.now(timezone.utc).isoformat()
+            self.backend.execute_sync(
+                """
+                UPDATE relationships
+                SET valid_until = ?, invalidated_by = ?
+                WHERE id = ?
+                """,
+                (now, invalidated_by, relationship_id)
+            )
+
+            self.backend.commit()
+            logger.info(f"Invalidated relationship: {relationship_id}")
+
+        except Exception as e:
+            self.backend.rollback()
+            if isinstance(e, (RelationshipError, DatabaseConnectionError)):
+                raise
+            logger.error(f"Failed to invalidate relationship {relationship_id}: {e}")
+            raise DatabaseConnectionError(f"Failed to invalidate relationship: {e}")
+
+    async def get_relationship_history(
+        self,
+        memory_id: str,
+        relationship_types: List[RelationshipType] = None
+    ) -> List[Relationship]:
+        """
+        Get full history of relationships for a memory, including invalidated ones.
+
+        Args:
+            memory_id: ID of the memory to get history for
+            relationship_types: Optional filter by relationship types
+
+        Returns:
+            List of Relationship objects, ordered chronologically by valid_from
+
+        Raises:
+            DatabaseConnectionError: If query fails
+        """
+        try:
+            # Build query
+            where_conditions = ["(r.from_id = ? OR r.to_id = ?)"]
+            params = [memory_id, memory_id]
+
+            if relationship_types:
+                type_placeholders = ','.join('?' * len(relationship_types))
+                where_conditions.append(f"r.rel_type IN ({type_placeholders})")
+                params.extend([rt.value for rt in relationship_types])
+
+            where_clause = " AND ".join(where_conditions)
+
+            # Query for all relationships (including invalidated ones)
+            query = f"""
+                SELECT
+                    r.id as rel_id,
+                    r.from_id as rel_from,
+                    r.to_id as rel_to,
+                    r.rel_type as rel_type,
+                    r.properties as rel_props,
+                    r.valid_from,
+                    r.valid_until,
+                    r.recorded_at,
+                    r.invalidated_by
+                FROM relationships r
+                WHERE {where_clause}
+                ORDER BY r.valid_from ASC
+            """
+
+            params_query = [memory_id, memory_id] + params[2:]
+            result = self.backend.execute_sync(query, tuple(params_query))
+
+            relationships = []
+            for row in result:
+                rel_props = json.loads(row['rel_props'])
+                rel_type_str = row['rel_type']
+
+                try:
+                    rel_type = RelationshipType(rel_type_str)
+                except ValueError:
+                    rel_type = RelationshipType.RELATED_TO
+
+                # Parse temporal fields
+                valid_from = datetime.fromisoformat(row['valid_from']) if row['valid_from'] else None
+                valid_until = datetime.fromisoformat(row['valid_until']) if row['valid_until'] else None
+                recorded_at = datetime.fromisoformat(row['recorded_at']) if row['recorded_at'] else None
+
+                relationship = Relationship(
+                    id=row['rel_id'],
+                    from_memory_id=row['rel_from'],
+                    to_memory_id=row['rel_to'],
+                    type=rel_type,
+                    properties=RelationshipProperties(
+                        strength=rel_props.get("strength", 0.5),
+                        confidence=rel_props.get("confidence", 0.8),
+                        context=rel_props.get("context"),
+                        evidence_count=rel_props.get("evidence_count", 1),
+                        valid_from=valid_from,
+                        valid_until=valid_until,
+                        recorded_at=recorded_at,
+                        invalidated_by=row['invalidated_by']
+                    )
+                )
+                relationships.append(relationship)
+
+            logger.info(f"Found {len(relationships)} relationships in history for {memory_id}")
+            return relationships
+
+        except Exception as e:
+            if isinstance(e, DatabaseConnectionError):
+                raise
+            logger.error(f"Failed to get relationship history for {memory_id}: {e}")
+            raise DatabaseConnectionError(f"Failed to get relationship history: {e}")
+
+    async def what_changed(
+        self,
+        since: datetime
+    ) -> Dict[str, List[Relationship]]:
+        """
+        Get all relationship changes since a given time.
+
+        Args:
+            since: DateTime to query changes from
+
+        Returns:
+            Dictionary with "new_relationships" and "invalidated_relationships" lists
+
+        Raises:
+            DatabaseConnectionError: If query fails
+        """
+        try:
+            since_str = since.isoformat()
+
+            # Query for new relationships (recorded_at >= since)
+            new_query = """
+                SELECT
+                    r.id as rel_id,
+                    r.from_id as rel_from,
+                    r.to_id as rel_to,
+                    r.rel_type as rel_type,
+                    r.properties as rel_props,
+                    r.valid_from,
+                    r.valid_until,
+                    r.recorded_at,
+                    r.invalidated_by
+                FROM relationships r
+                WHERE r.recorded_at >= ?
+                ORDER BY r.recorded_at DESC
+            """
+
+            new_result = self.backend.execute_sync(new_query, (since_str,))
+
+            # Query for invalidated relationships (valid_until set since)
+            invalidated_query = """
+                SELECT
+                    r.id as rel_id,
+                    r.from_id as rel_from,
+                    r.to_id as rel_to,
+                    r.rel_type as rel_type,
+                    r.properties as rel_props,
+                    r.valid_from,
+                    r.valid_until,
+                    r.recorded_at,
+                    r.invalidated_by
+                FROM relationships r
+                WHERE r.valid_until IS NOT NULL AND r.valid_until >= ?
+                ORDER BY r.valid_until DESC
+            """
+
+            invalidated_result = self.backend.execute_sync(invalidated_query, (since_str,))
+
+            # Parse results
+            new_relationships = []
+            for row in new_result:
+                rel_props = json.loads(row['rel_props'])
+                rel_type_str = row['rel_type']
+
+                try:
+                    rel_type = RelationshipType(rel_type_str)
+                except ValueError:
+                    rel_type = RelationshipType.RELATED_TO
+
+                valid_from = datetime.fromisoformat(row['valid_from']) if row['valid_from'] else None
+                valid_until = datetime.fromisoformat(row['valid_until']) if row['valid_until'] else None
+                recorded_at = datetime.fromisoformat(row['recorded_at']) if row['recorded_at'] else None
+
+                relationship = Relationship(
+                    id=row['rel_id'],
+                    from_memory_id=row['rel_from'],
+                    to_memory_id=row['rel_to'],
+                    type=rel_type,
+                    properties=RelationshipProperties(
+                        strength=rel_props.get("strength", 0.5),
+                        confidence=rel_props.get("confidence", 0.8),
+                        context=rel_props.get("context"),
+                        valid_from=valid_from,
+                        valid_until=valid_until,
+                        recorded_at=recorded_at,
+                        invalidated_by=row['invalidated_by']
+                    )
+                )
+                new_relationships.append(relationship)
+
+            invalidated_relationships = []
+            for row in invalidated_result:
+                rel_props = json.loads(row['rel_props'])
+                rel_type_str = row['rel_type']
+
+                try:
+                    rel_type = RelationshipType(rel_type_str)
+                except ValueError:
+                    rel_type = RelationshipType.RELATED_TO
+
+                valid_from = datetime.fromisoformat(row['valid_from']) if row['valid_from'] else None
+                valid_until = datetime.fromisoformat(row['valid_until']) if row['valid_until'] else None
+                recorded_at = datetime.fromisoformat(row['recorded_at']) if row['recorded_at'] else None
+
+                relationship = Relationship(
+                    id=row['rel_id'],
+                    from_memory_id=row['rel_from'],
+                    to_memory_id=row['rel_to'],
+                    type=rel_type,
+                    properties=RelationshipProperties(
+                        strength=rel_props.get("strength", 0.5),
+                        confidence=rel_props.get("confidence", 0.8),
+                        context=rel_props.get("context"),
+                        valid_from=valid_from,
+                        valid_until=valid_until,
+                        recorded_at=recorded_at,
+                        invalidated_by=row['invalidated_by']
+                    )
+                )
+                invalidated_relationships.append(relationship)
+
+            logger.info(f"Found {len(new_relationships)} new and {len(invalidated_relationships)} invalidated relationships since {since}")
+            return {
+                "new_relationships": new_relationships,
+                "invalidated_relationships": invalidated_relationships
+            }
+
+        except Exception as e:
+            if isinstance(e, DatabaseConnectionError):
+                raise
+            logger.error(f"Failed to get changes since {since}: {e}")
+            raise DatabaseConnectionError(f"Failed to get changes: {e}")
 
     async def search_relationships_by_context(
         self,

@@ -165,7 +165,7 @@ class SQLiteFallbackBackend(GraphBackend):
                 )
             """)
 
-            # Create relationships table
+            # Create relationships table (with bi-temporal fields)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS relationships (
                     id TEXT PRIMARY KEY,
@@ -174,8 +174,16 @@ class SQLiteFallbackBackend(GraphBackend):
                     rel_type TEXT NOT NULL,
                     properties TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                    -- Bi-temporal tracking fields (Phase 2.2)
+                    valid_from TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    valid_until TIMESTAMP,
+                    recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    invalidated_by TEXT,
+
                     FOREIGN KEY (from_id) REFERENCES nodes(id) ON DELETE CASCADE,
-                    FOREIGN KEY (to_id) REFERENCES nodes(id) ON DELETE CASCADE
+                    FOREIGN KEY (to_id) REFERENCES nodes(id) ON DELETE CASCADE,
+                    FOREIGN KEY (invalidated_by) REFERENCES relationships(id) ON DELETE SET NULL
                 )
             """)
 
@@ -185,6 +193,21 @@ class SQLiteFallbackBackend(GraphBackend):
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_rel_from ON relationships(from_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_rel_to ON relationships(to_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_rel_type ON relationships(rel_type)")
+
+            # Temporal indexes (Phase 2.2)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_relationships_temporal
+                ON relationships(valid_from, valid_until)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_relationships_current
+                ON relationships(valid_until)
+                WHERE valid_until IS NULL
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_relationships_recorded
+                ON relationships(recorded_at)
+            """)
 
             # Conditional multi-tenant indexes (Phase 1)
             if Config.is_multi_tenant_mode():
