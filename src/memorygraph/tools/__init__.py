@@ -8,6 +8,7 @@ This package contains modular tool handlers organized by functionality:
 - activity_tools: Activity summaries and statistics
 - browse_tools: Browse and discover memories by type, project, and domain
 - chain_tools: Traverse relationship chains and dependency trees
+- temporal_tools: Bi-temporal queries and time-travel operations
 """
 
 from .memory_tools import (
@@ -39,6 +40,11 @@ from .chain_tools import (
     handle_find_chain,
     handle_trace_dependencies,
 )
+from .temporal_tools import (
+    handle_query_as_of,
+    handle_get_relationship_history,
+    handle_what_changed,
+)
 
 __all__ = [
     # Memory CRUD operations
@@ -64,4 +70,8 @@ __all__ = [
     # Chain operations
     "handle_find_chain",
     "handle_trace_dependencies",
+    # Temporal operations
+    "handle_query_as_of",
+    "handle_get_relationship_history",
+    "handle_what_changed",
 ]

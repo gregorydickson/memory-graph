@@ -65,6 +65,9 @@ from .tools import (
     handle_browse_domains,
     handle_find_chain,
     handle_trace_dependencies,
+    handle_query_as_of,
+    handle_get_relationship_history,
+    handle_what_changed,
 )
 
 
@@ -825,6 +828,134 @@ RETURNS:
                     },
                     "required": ["memory_id", "query"]
                 }
+            ),
+            Tool(
+                name="query_as_of",
+                description="""Query relationships as they existed at a specific point in time.
+
+Enables time-travel queries to see what knowledge existed at any past date.
+Part of bi-temporal tracking system.
+
+WHEN TO USE:
+- "What solutions were we using on date X?"
+- "What dependencies existed when bug Y appeared?"
+- Debugging historical issues
+- Understanding knowledge evolution
+
+HOW TO USE:
+- Provide memory_id to query
+- Provide as_of timestamp (ISO 8601 format: "2024-12-01T00:00:00Z")
+- Optional: Filter by relationship_types
+
+EXAMPLES:
+- query_as_of(memory_id="problem-123", as_of="2024-06-01T00:00:00Z")
+- query_as_of(memory_id="service-a", as_of="2024-01-15T00:00:00Z", relationship_types=["DEPENDS_ON"])
+
+RETURNS:
+- Relationships that were valid at the specified time
+- Valid from/until timestamps
+- Current vs historical status""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "memory_id": {
+                            "type": "string",
+                            "description": "Memory ID to query relationships for"
+                        },
+                        "as_of": {
+                            "type": "string",
+                            "description": "ISO 8601 timestamp (e.g., '2024-12-01T00:00:00Z')"
+                        },
+                        "relationship_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [t.value for t in RelationshipType]
+                            },
+                            "description": "Optional filter by relationship types"
+                        }
+                    },
+                    "required": ["memory_id", "as_of"]
+                }
+            ),
+            Tool(
+                name="get_relationship_history",
+                description="""Get full history of relationships for a memory, including invalidated ones.
+
+Shows how understanding evolved over time, tracking both current and superseded relationships.
+
+WHEN TO USE:
+- "How did our solution for this problem evolve?"
+- "What dependencies changed over time?"
+- Understanding knowledge evolution
+- Auditing relationship changes
+
+HOW TO USE:
+- Provide memory_id to get history for
+- Optional: Filter by relationship_types
+
+EXAMPLES:
+- get_relationship_history(memory_id="problem-123")
+- get_relationship_history(memory_id="service-a", relationship_types=["DEPENDS_ON", "REQUIRES"])
+
+RETURNS:
+- Chronological timeline of all relationships
+- Current vs invalidated status
+- Supersession chains (what replaced what)
+- Valid from/until timestamps""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "memory_id": {
+                            "type": "string",
+                            "description": "Memory ID to get relationship history for"
+                        },
+                        "relationship_types": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "enum": [t.value for t in RelationshipType]
+                            },
+                            "description": "Optional filter by relationship types"
+                        }
+                    },
+                    "required": ["memory_id"]
+                }
+            ),
+            Tool(
+                name="what_changed",
+                description="""Show all relationship changes (creations and invalidations) since a specific time.
+
+Useful for catching up after being away or understanding recent knowledge updates.
+
+WHEN TO USE:
+- "What changed while I was away?"
+- "Show me updates from last week"
+- Auditing recent changes
+- Understanding recent knowledge evolution
+
+HOW TO USE:
+- Provide since timestamp (ISO 8601 format: "2024-12-01T00:00:00Z")
+
+EXAMPLES:
+- what_changed(since="2024-12-01T00:00:00Z")
+- what_changed(since="2024-11-15T00:00:00Z")
+
+RETURNS:
+- New relationships created since the timestamp
+- Relationships invalidated since the timestamp
+- Recorded timestamps for all changes
+- Supersession information""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "since": {
+                            "type": "string",
+                            "description": "ISO 8601 timestamp to query from (e.g., '2024-12-01T00:00:00Z')"
+                        }
+                    },
+                    "required": ["since"]
+                }
             )
         ]
 
@@ -896,6 +1027,13 @@ RETURNS:
                     return await handle_trace_dependencies(self.memory_db, arguments)
                 elif name == "contextual_search":
                     return await handle_contextual_search(self.memory_db, arguments)
+                # Temporal tools
+                elif name == "query_as_of":
+                    return await handle_query_as_of(self.memory_db, arguments)
+                elif name == "get_relationship_history":
+                    return await handle_get_relationship_history(self.memory_db, arguments)
+                elif name == "what_changed":
+                    return await handle_what_changed(self.memory_db, arguments)
                 # Advanced relationship tools
                 elif name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
                                        "suggest_relationship_type", "reinforce_relationship",
