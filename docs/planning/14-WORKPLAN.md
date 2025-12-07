@@ -1,17 +1,39 @@
 # Workplan 14: Cloud Infrastructure - LOW COST (v1.0.0)
 
-**Version Target**: v1.0.0
-**Priority**: CRITICAL (Competitive Response)
-**Prerequisites**:
-- Workplans 1-5 complete ✅
-- Domain registered (memorygraph.dev)
-**Estimated Effort**: 16-24 hours
+> ## ⚠️ DEPRECATED - DO NOT USE
+>
+> **Status**: DEPRECATED (2025-12-06)
+> **Reason**: Superseded by memorygraph.dev project workplans
+>
+> **The cloud infrastructure is being built in the separate `memorygraph.dev` repository.**
+>
+> ### What to Use Instead
+>
+> See `/Users/gregorydickson/memorygraph.dev/docs/planning/`:
+> - **Workplan 1**: Infrastructure (✅ COMPLETE) - GCP, Cloud SQL, FalkorDB
+> - **Workplan 2**: Auth Service (✅ COMPLETE) - FastAPI, JWT, API Keys
+> - **Workplan 3**: Marketing Site (✅ COMPLETE) - Astro, Cloudflare Pages
+> - **Workplan 4**: Graph Service (🚧 75% COMPLETE) - FastAPI, FalkorDB
+> - **Workplan 6**: User Dashboard (✅ COMPLETE) - Next.js, Cloud Run
+> - **Workplan 7**: Operations - Monitoring, logging, security
+>
+> ### Key Architecture Decisions (memorygraph.dev)
+>
+> | Component | memorygraph.dev Decision | This Workplan Proposed |
+> |-----------|-------------------------|----------------------|
+> | Auth | FastAPI + PostgreSQL + JWT | Supabase Auth |
+> | Storage | FalkorDB Cloud + Cloud SQL | Turso + Supabase |
+> | API | FastAPI on Cloud Run | FastAPI on Cloud Run ✅ |
+> | Website | Cloudflare Pages | Cloudflare Pages ✅ |
+> | Dashboard | Next.js on Cloud Run | Astro static |
+>
+> **The memorygraph.dev decisions prevail.** This workplan is kept for historical reference only.
 
 ---
 
-## Overview
+## ~~Overview~~ (DEPRECATED)
 
-Deploy memorygraph.dev cloud platform using cost-effective managed services. Prioritize free tiers and pay-per-use over fixed infrastructure costs. Target: <$50/month for first 1000 users.
+~~Deploy memorygraph.dev cloud platform using cost-effective managed services. Prioritize free tiers and pay-per-use over fixed infrastructure costs. Target: <$50/month for first 1000 users.~~
 
 **Cost Philosophy**: Bootstrap-friendly. Use free tiers and serverless where possible. Avoid Kubernetes complexity and fixed compute costs.
 

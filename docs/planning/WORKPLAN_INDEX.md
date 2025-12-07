@@ -124,48 +124,38 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Tasks**: 70+ (across 10 sections)
 - **Estimated Effort**: 12-16 hours
 
-### v1.0.0 Features - NEW (Cloud Launch)
+### v1.0.0 Features - Cloud Launch
 
-**[14-WORKPLAN.md](14-WORKPLAN.md)** - Cloud Infrastructure - LOW COST (v1.0.0) - **NEW**
-- Deploy memorygraph.dev using cost-effective managed services
-- Free tiers and serverless (Cloudflare Pages, Cloud Run, Supabase)
-- Target: <$50/month for first 1000 users
-- **Priority**: CRITICAL (Competitive Response)
-- **Prerequisites**: Domain registered, 1-5 complete ✅
-- **Reference**: PRODUCT_ROADMAP.md Phase 3
-- **Tasks**: 100+ (across 14 sections)
-- **Estimated Effort**: 16-24 hours
+> **Note**: Cloud infrastructure is managed in the separate **memorygraph.dev** repository.
+> See `/Users/gregorydickson/memorygraph.dev/docs/planning/` for cloud workplans.
 
-**[15-WORKPLAN.md](15-WORKPLAN.md)** - Authentication & API Keys (v1.0.0) - **NEW**
-- Email/password + OAuth (GitHub, Google)
-- API key generation and management for MCP clients
-- Rate limiting by tier
-- **Priority**: HIGH
-- **Prerequisites**: 14 Section 3 complete
-- **Reference**: OWASP guidelines, Workplan 14
-- **Tasks**: 80+ (across 9 sections)
-- **Estimated Effort**: 8-12 hours
+**[14-WORKPLAN.md](14-WORKPLAN.md)** - ❌ **DEPRECATED**
+- **Status**: Superseded by memorygraph.dev workplans
+- Cloud infrastructure already built with different architecture:
+  - Auth: FastAPI + PostgreSQL + JWT (not Supabase)
+  - Storage: FalkorDB Cloud + Cloud SQL (not Turso)
+  - Dashboard: Next.js on Cloud Run (not Astro static)
+- **Do not use**: See `memorygraph.dev/docs/planning/` instead
 
-**[16-WORKPLAN.md](16-WORKPLAN.md)** - SDK Development (v1.0.0) - **NEW**
+**[15-WORKPLAN.md](15-WORKPLAN.md)** - ❌ **DEPRECATED**
+- **Status**: Superseded by memorygraph.dev Workplan 2 (Auth Service)
+- Auth service already deployed to Cloud Run
+- **Do not use**: See `memorygraph.dev/docs/planning/2-WORKPLAN-auth-service.md`
+
+**[16-WORKPLAN.md](16-WORKPLAN.md)** - SDK Development (v1.0.0)
 - Create memorygraphsdk Python package
 - LangChain, CrewAI, AutoGen integrations
 - Publish to PyPI
 - **Priority**: HIGH (Competitive Differentiation vs Cipher)
-- **Prerequisites**: 14-15 complete
-- **Reference**: PRODUCT_ROADMAP.md Phase 3.4
+- **Prerequisites**: memorygraph.dev Graph Service complete
+- **Reference**: PRODUCT_ROADMAP.md Phase 3.4, memorygraph.dev Workplan 8-10
 - **Tasks**: 60+ (across 8 sections)
-- **Estimated Effort**: 12-16 hours
+- **Note**: Aligns with memorygraph.dev SDK workplans (8-10)
 
-**[17-WORKPLAN.md](17-WORKPLAN.md)** - memorygraph.dev Website (v1.0.0) - **NEW**
-- Build marketing website with retro-terminal aesthetic
-- Landing page, pricing, docs, comparison page
-- Merge content from 7-WEBSITE-WORKPLAN (deprecated)
-- **Priority**: HIGH
-- **Prerequisites**: Domain registered, 14 Section 2 complete
-- **Reference**: 7-WEBSITE-WORKPLAN (deprecated), Workplan 14
-- **Tasks**: 90+ (across 10 sections)
-- **Estimated Effort**: 12-16 hours
-- **Note**: Supersedes 7-WEBSITE-WORKPLAN.md
+**[17-WORKPLAN.md](17-WORKPLAN.md)** - ❌ **DEPRECATED**
+- **Status**: Superseded by memorygraph.dev Workplan 3 (Marketing Site)
+- Website already live at https://memorygraph.dev
+- **Do not use**: See `memorygraph.dev/docs/planning/3-WORKPLAN-marketing-site.md`
 
 ### v1.1.0 Features - NEW (Post-Launch)
 
