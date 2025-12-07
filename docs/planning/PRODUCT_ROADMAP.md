@@ -1,9 +1,9 @@
 # memory-graph Product Roadmap
 
-**Document Version**: 3.3
+**Document Version**: 3.4
 **Last Updated**: December 2025
 **Author**: Gregory Dickson
-**Status**: Strategic Plan - COMPETITIVE RESPONSE UPDATE
+**Status**: Strategic Plan - ALIGNED WITH MEMORYGRAPH.DEV IMPLEMENTATION
 
 ---
 
@@ -38,7 +38,7 @@ Byterover has pivoted away from vector search! Key changes:
 | Memory Structure | Context Tree (Domains/Topics) | Knowledge Graph (35+ typed relationships) ✅ |
 | Relationships | Generic edges | 35+ typed relationships ✅ |
 | GitHub Stars | 3,200+ | Growing |
-| Cloud | Byterover.dev (live) | memorygraph.dev (planned) |
+| Cloud | Byterover.dev (live) | memorygraph.dev (in progress) |
 | Team Sync | `brv pull` | Planned Phase 4 |
 
 ### Competitor 2: Zep/Graphiti (Temporal Knowledge Graph Leader)
@@ -513,21 +513,30 @@ Keep embeddings as optional enhancement, not core requirement.
 **Timeline**: Weeks 10-14
 **Goal**: Launch memorygraph.dev before Byterover consolidates market
 
-### Urgency Note
+### Implementation Status
 
-Byterover.dev is already live. Every week we delay, they gain more users and market mindshare. We must launch a competitive cloud offering ASAP.
+> **Note**: Cloud infrastructure is being built in the separate `memorygraph.dev` repository.
+> See `/memorygraph.dev/docs/planning/` for detailed workplans.
 
-### 3.1 Cloud Infrastructure (From Existing Workplan)
+### 3.1 Cloud Infrastructure ✅ COMPLETE
 
-Reference: Cloud platform workplan document
+Reference: memorygraph.dev Workplan 1-3
 
 | Task | Priority | Status |
 |------|----------|--------|
-| GCP project setup (memorygraph-prod) | 🔴 CRITICAL | ⬜ TODO |
-| Cloud SQL PostgreSQL instance | 🔴 CRITICAL | ⬜ TODO |
-| FalkorDB Cloud cluster | 🔴 CRITICAL | ⬜ TODO |
-| Auth API (FastAPI on Cloud Run) | 🔴 CRITICAL | ⬜ TODO |
-| Graph API (FastAPI on Cloud Run) | 🔴 CRITICAL | ⬜ TODO |
+| GCP project setup (memorygraph-prod) | 🔴 CRITICAL | ✅ DONE |
+| Cloud SQL PostgreSQL 15 (34.57.139.115) | 🔴 CRITICAL | ✅ DONE |
+| FalkorDB self-hosted (34.57.52.93:6379) | 🔴 CRITICAL | ✅ DONE |
+| Auth API (FastAPI on Cloud Run) | 🔴 CRITICAL | ✅ DONE |
+| Graph API (FastAPI on Cloud Run) | 🔴 CRITICAL | 🚧 IN PROGRESS |
+| Marketing site (memorygraph.dev) | 🔴 CRITICAL | ✅ DONE |
+
+**Architecture Decisions Made** (see memorygraph.dev ADRs):
+- **ADR-001**: FastAPI + GCP + FalkorDB + Stripe (not Supabase)
+- **ADR-002**: Graph-per-tenant isolation for multi-tenancy
+- **ADR-003**: API key + JWT authentication (not Supabase Auth)
+- **ADR-004**: Static site on Cloud Storage + CDN (Cloudflare Pages)
+- **ADR-006**: FalkorDB self-hosted on GCE (not Turso)
 
 ### 3.2 Competitive Pricing
 
@@ -539,14 +548,16 @@ Match or beat Byterover's pricing (if known). Our target:
 | Pro | $8/month | Competitive |
 | Team | $12/user/month | Competitive |
 
-### 3.3 Landing Page (memorygraph.dev)
+### 3.3 Landing Page (memorygraph.dev) ✅ COMPLETE
 
 | Task | Priority | Status |
 |------|----------|--------|
-| Domain registration | 🔴 CRITICAL | ⬜ TODO |
-| Landing page with comparison section | 🔴 CRITICAL | ⬜ TODO |
-| "Why Choose memory-graph" (vs alternatives) | 🔴 HIGH | ⬜ TODO |
-| Pricing page | 🔴 HIGH | ⬜ TODO |
+| Domain registration | 🔴 CRITICAL | ✅ DONE |
+| Landing page with comparison section | 🔴 CRITICAL | ✅ DONE |
+| "Why Choose memory-graph" (vs alternatives) | 🔴 HIGH | ✅ DONE |
+| Pricing page | 🔴 HIGH | ✅ DONE |
+| Spanish translations | 🟡 MEDIUM | ✅ DONE |
+| Documentation hub | 🔴 HIGH | ✅ DONE |
 
 **Landing Page Must Include**:
 1. Apache 2.0 badge prominently displayed
@@ -560,17 +571,29 @@ Match or beat Byterover's pricing (if known). Our target:
 
 Cipher is MCP-only. Our SDK expands to LangChain, CrewAI, etc.
 
+Reference: memorygraph.dev Workplans 8-10
+
 | Task | Priority | Status |
 |------|----------|--------|
-| memorygraphsdk core package | 🔴 HIGH | ⬜ TODO |
-| LangChain integration | 🔴 HIGH | ⬜ TODO |
-| CrewAI integration | 🔴 HIGH | ⬜ TODO |
-| Publish to PyPI | 🔴 HIGH | ⬜ TODO |
+| memorygraphsdk core package | 🔴 HIGH | 🔜 PLANNED (after Workplan 4) |
+| LangChain integration | 🔴 HIGH | 🔜 PLANNED (Workplan 9) |
+| CrewAI integration | 🟡 MEDIUM | 🔜 ON-DEMAND |
+| Semantic search capability | 🔴 HIGH | 🔜 PLANNED (Workplan 10) |
+| Publish to PyPI | 🔴 HIGH | 🔜 PLANNED |
 
 **Key Message**: "memory-graph works everywhere - MCP, LangChain, CrewAI, and more. Not locked into one protocol."
 
+### 3.5 Remaining Cloud Work (memorygraph.dev)
+
+| Workplan | Status | Scope |
+|----------|--------|-------|
+| 4: Graph Service | 🚧 Ready to start | FastAPI graph service, multi-tenant isolation |
+| 5: MCP Integration | Blocked by 4 | Cloud backend adapter for MCP server |
+| 6: User Dashboard | 🚧 Ready to start | Next.js dashboard at app.memorygraph.dev |
+| 7: Operations | Blocked by 4 | Monitoring, alerting, security hardening |
+
 ### Phase 3 Success Metrics
-- [ ] memorygraph.dev live
+- [x] memorygraph.dev live ✅
 - [ ] 50+ Pro subscribers
 - [ ] SDK published with 2+ framework integrations
 - [ ] $400+ MRR
@@ -860,6 +883,7 @@ Build on Phase 2 bi-temporal foundation.
 | 3.1 | Dec 2025 | Gregory Dickson | **GRAPHITI ANALYSIS**: Added Zep/Graphiti as competitor, added bi-temporal tracking to Phase 2, renamed Phase 2 to "Search & Temporal Model", added Graphiti architecture study tasks |
 | 3.2 | Dec 2025 | Gregory Dickson | **CIPHER v0.3.1 RESPONSE**: Updated Cipher profile (they abandoned vectors for Agentic Search!), replaced embedding strategy with Semantic Navigation approach, positioned cloud-native sync as advantage over Cipher's manual `brv pull`, added marketing angles around Cipher's validation of our approach |
 | 3.3 | Dec 2025 | Gregory Dickson | **DEFERRED FEATURES**: Added VSCode Extension deferral decision (v1.2.0+), documented MCP + GitHub Copilot as current alternative |
+| 3.4 | Dec 2025 | Gregory Dickson | **MEMORYGRAPH.DEV ALIGNMENT**: Updated Phase 3 to reflect actual implementation in memorygraph.dev repository. Infrastructure complete (GCP, Cloud SQL, FalkorDB, Auth API). Marketing site live. Added ADR references. Updated task statuses. Documented remaining workplans (4-7, 8-10). |
 
 ---
 
