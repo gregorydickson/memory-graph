@@ -1,9 +1,34 @@
 # MemoryGraph Workplan Index
 
-**Last Updated**: 2025-12-05
-**Current Version**: v0.9.6 (released)
-**Test Status**: 1,200 tests passing
+**Last Updated**: 2025-12-07
+**Current Version**: v0.10.0 (in progress)
+**Test Status**: 1,338 tests passing
 **Purpose**: Central index for all workplans organized by priority and dependency
+
+---
+
+## ⚠️ Context Budget Principle (2025-12-07)
+
+**Every MCP tool must justify its context overhead.**
+
+| Metric | Budget |
+|--------|--------|
+| MCP tool definition | ~1-1.5k tokens each |
+| Current total (Core) | ~9.6k tokens (9 tools) |
+| Current total (Extended) | ~11k tokens (12 tools) |
+| Target overhead | <15% of context window |
+
+### Before Adding New MCP Tools
+
+1. **Estimate cost**: ~1-1.5k tokens per tool
+2. **Evaluate uniqueness**: Does this duplicate existing functionality?
+3. **Assess frequency**: Expected usage > 10% of sessions?
+4. **Calculate ROI**: value / context_cost > 0.5
+
+### Recent Decisions
+
+- **12-WORKPLAN**: Cut 5/6 navigation tools (saved ~5.5k tokens)
+- **13-WORKPLAN**: MCP tools deferred pending usage review
 
 ---
 
@@ -14,6 +39,7 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Self-contained** with clear prerequisites
 - **Actionable** with markdown checkboxes
 - **File-specific** with absolute paths where relevant
+- **Context-aware** with MCP tool budgets considered
 
 ---
 
@@ -102,25 +128,25 @@ Workplans are numbered and organized for sequential execution by coding agents. 
 - **Reference**: ADR-015 Phases 4-6
 - **Tasks**: 26 (MCP tools complete, benchmarks/docs pending)
 
-### v0.10.0 Features - NEW (Competitive Response)
+### v0.10.0 Features (Competitive Response)
 
-**[12-WORKPLAN.md](12-WORKPLAN.md)** - Semantic Navigation Tools (v0.10.0) - **NEW**
-- Implement enhanced navigation tools (browse_memory_types, find_chain, etc.)
+**[12-WORKPLAN.md](12-WORKPLAN.md)** - Semantic Navigation Tools (v0.10.0) - **COMPLETE** ✅
+- ~~6 navigation tools~~ → 1 tool kept (contextual_search)
+- **5 tools cut** to reduce context overhead (saved ~5.5k tokens)
 - Enable LLM-driven semantic graph traversal (no embeddings)
-- Validated by Cipher's pivot away from vectors
-- **Priority**: HIGH (Competitive Gap)
+- **Status**: COMPLETE (2025-12-07) - scope reduced for context efficiency
 - **Prerequisites**: 1-5 complete ✅
 - **Reference**: PRODUCT_ROADMAP.md Phase 2.3
-- **Tasks**: 60+ (across 9 sections)
-- **Estimated Effort**: 8-12 hours
+- **Context Decision**: Cut 83% of planned tools after cost/benefit analysis
 
-**[13-WORKPLAN.md](13-WORKPLAN.md)** - Bi-Temporal Schema (v0.10.0) - **NEW**
-- Implement bi-temporal tracking (valid_from, valid_until, recorded_at)
-- Track both when facts were true AND when we learned them
+**[13-WORKPLAN.md](13-WORKPLAN.md)** - Bi-Temporal Schema (v0.10.0) - **IN PROGRESS** 🚧
+- Bi-temporal tracking implemented (valid_from, valid_until, recorded_at)
+- Backend methods complete, MCP tools **pending context review**
 - Learn from Graphiti's proven temporal model
 - **Priority**: HIGH (Learn from Graphiti)
 - **Prerequisites**: 1-5 complete ✅
-- **Reference**: PRODUCT_ROADMAP.md Phase 2.2, ADR-016 (to be created)
+- **Reference**: PRODUCT_ROADMAP.md Phase 2.2, ADR-016 created
+- **Context Decision**: 3 MCP tools proposed, recommend backend-only until usage proven
 - **Tasks**: 70+ (across 10 sections)
 - **Estimated Effort**: 12-16 hours
 

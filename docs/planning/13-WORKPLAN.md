@@ -4,6 +4,40 @@
 **Priority**: HIGH (Learn from Graphiti)
 **Prerequisites**: Workplans 1-5 complete ✅
 **Estimated Effort**: 12-16 hours
+**Status**: 🚧 IN PROGRESS - Core implementation complete, MCP tools pending review
+
+---
+
+## ⚠️ Context Budget Review Required
+
+### Current Temporal MCP Tools (Section 6)
+
+The workplan proposes 3 new MCP tools. Before implementation, evaluate context cost:
+
+| Tool | Est. Tokens | Unique Value | Decision |
+|------|-------------|--------------|----------|
+| query_as_of | ~1.0k | Medium - point-in-time queries | **REVIEW** |
+| get_relationship_history | ~1.0k | Medium - history view | **REVIEW** |
+| what_changed | ~1.0k | High - catch-up queries | **REVIEW** |
+
+### Questions Before Proceeding
+
+1. **Can existing tools handle this?**
+   - `get_related_memories` could accept `as_of` param (0 new tokens)
+   - `get_recent_activity` already provides "what changed" functionality
+
+2. **What's the expected usage?**
+   - Point-in-time queries: ~5% of sessions?
+   - History views: ~2% of sessions?
+   - Catch-up queries: ~10% of sessions?
+
+3. **Alternative: Backend-only implementation**
+   - Add `as_of` parameter to existing tools (no new MCP tools)
+   - History available via Python API, not exposed as MCP tool
+   - Save ~3k context tokens
+
+### Recommendation
+**Defer MCP tool registration until usage data justifies context cost.** Implement backend methods only. Expose as MCP tools if demand is proven.
 
 ---
 
@@ -468,9 +502,13 @@ async def rollback_from_bitemporal(backend, dry_run=False):
 
 ---
 
-## Section 6: MCP Tools ✅
+## Section 6: MCP Tools - DEFERRED (Backend-only)
 
-### 6.1 Add Point-in-Time Query Tool ✅
+**Status**: DEFERRED per ADR-017 Context Budget Constraint
+**Reason**: Save ~3k context tokens; backend methods available via Python API
+**Future**: May expose as MCP tools if usage data justifies context cost
+
+### 6.1 Add Point-in-Time Query Tool - DEFERRED
 
 **File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/tools/temporal_tools.py`
 
@@ -492,13 +530,13 @@ def query_as_of(memory_id: str, as_of: str, backend: Backend) -> dict:
 ```
 
 **Tasks**:
-- [x] Create temporal_tools.py
-- [x] Implement query_as_of tool
+- [x] Create temporal_tools.py (backend handlers exist)
+- [x] Implement query_as_of tool (backend method available)
 - [x] Add ISO 8601 timestamp parsing
-- [x] Register as MCP tool
+- [ ] Register as MCP tool - DEFERRED (backend method available via Python API)
 - [x] Add tests for temporal queries
 
-### 6.2 Add History Query Tool ✅
+### 6.2 Add History Query Tool - DEFERRED
 
 **File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/tools/temporal_tools.py`
 
@@ -527,13 +565,13 @@ def get_relationship_history(memory_id: str, backend: Backend) -> dict:
 ```
 
 **Tasks**:
-- [x] Implement get_relationship_history tool
+- [x] Implement get_relationship_history tool (backend method available)
 - [x] Sort by valid_from for chronological view
 - [x] Show invalidation chains
-- [x] Register as MCP tool
+- [ ] Register as MCP tool - DEFERRED (backend method available via Python API)
 - [x] Add tests
 
-### 6.3 Add "What Changed" Tool ✅
+### 6.3 Add "What Changed" Tool - DEFERRED
 
 **File**: `/Users/gregorydickson/claude-code-memory/src/memorygraph/tools/temporal_tools.py`
 
@@ -555,10 +593,10 @@ def what_changed(since: str, backend: Backend) -> dict:
 ```
 
 **Tasks**:
-- [x] Implement what_changed tool
+- [x] Implement what_changed tool (backend method available)
 - [x] Query by recorded_at timestamp
 - [x] Include both creations and invalidations
-- [x] Register as MCP tool
+- [ ] Register as MCP tool - DEFERRED (backend method available via Python API)
 - [x] Add tests
 
 ---
