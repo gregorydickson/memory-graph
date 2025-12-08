@@ -13,7 +13,7 @@
   <a href="https://pypi.org/project/memorygraphMCP/"><img src="https://img.shields.io/pypi/v/memorygraphMCP" alt="PyPI"></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python"></a>
   <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/setup-zero--config-green" alt="Zero Config"></a>
-  <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/backends-7%20options-purple" alt="7 Backends"></a>
+  <a href="docs/CONFIGURATION.md"><img src="https://img.shields.io/badge/backends-8%20options-purple" alt="8 Backends"></a>
 </p>
 
 <p align="center">
@@ -205,6 +205,7 @@ See [TOOL_PROFILES.md](docs/TOOL_PROFILES.md) for complete tool list and details
 pipx install memorygraphMCP                      # Core mode (default, SQLite)
 pipx install "memorygraphMCP[neo4j]"             # With Neo4j backend support
 pipx install "memorygraphMCP[falkordblite]"      # With FalkorDBLite backend (embedded)
+pipx install "memorygraphMCP[ladybugdb]"         # With LadybugDB backend (embedded)
 pipx install "memorygraphMCP[falkordb]"          # With FalkorDB backend (client-server)
 ```
 
@@ -580,12 +581,13 @@ See: [CLAUDE.md Configuration Examples](docs/examples/CLAUDE_MD_EXAMPLES.md)
 
 ## Backends
 
-MemoryGraph supports 7 backend options to fit your deployment needs:
+MemoryGraph supports 8 backend options to fit your deployment needs:
 
 | Backend | Type | Config | Native Graph | Zero-Config | Best For |
 |---------|------|--------|--------------|-------------|----------|
 | **sqlite** | Embedded | File path | No (simulated) | ✅ | Default, simple use |
 | **falkordblite** | Embedded | File path | ✅ Cypher | ✅ | Graph queries without server |
+| **ladybugdb** | Embedded | File path | ✅ Cypher | ✅ | Graph queries without server |
 | **falkordb** | Client-server | Host:port | ✅ Cypher | ❌ | High-performance production |
 | **neo4j** | Client-server | URI | ✅ Cypher | ❌ | Enterprise features |
 | **memgraph** | Client-server | Host:port | ✅ Cypher | ❌ | Real-time analytics |
@@ -594,6 +596,7 @@ MemoryGraph supports 7 backend options to fit your deployment needs:
 
 **New: FalkorDB Options**
 - **FalkorDBLite**: Zero-config embedded database with native Cypher support, perfect upgrade from SQLite
+- **LadybugDB**: Leading columnar embedded graph database with Cypher support
 - **FalkorDB**: Redis-based graph DB with 500x faster p99 than Neo4j ([docs](https://docs.falkordb.com/))
 
 **New: Cloud Backend**
@@ -713,7 +716,7 @@ pytest tests/ -v --cov=memorygraph
 ### Cloud Backend & Turso Support
 - **MemoryGraph Cloud** - REST API client with circuit breaker for resilience (coming soon)
 - **Turso Backend** - Distributed SQLite with embedded replica support for edge deployments
-- **7 total backends** - sqlite, neo4j, memgraph, falkordb, falkordblite, turso, cloud
+- **8 total backends** - sqlite, neo4j, memgraph, falkordb, falkordblite, ladybugdb, turso, cloud
 
 ### Backend Migration
 - **`memorygraph migrate`** - Migrate data between any two backends
@@ -759,7 +762,7 @@ memorygraph import --format json --input backup.json --skip-duplicates
 ## Roadmap
 
 ### Current (v0.9.5)
-- 7 backend options (SQLite, Neo4j, Memgraph, FalkorDB, FalkorDBLite, Turso, Cloud)
+- 8 backend options (SQLite, Neo4j, Memgraph, FalkorDB, FalkorDBLite, LadybugDB, Turso, Cloud)
 - Backend-to-backend migration with `memorygraph migrate`
 - Universal export/import (all backends)
 - Circuit breaker for cloud resilience
