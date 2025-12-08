@@ -1,9 +1,8 @@
 name: Release SDK to PyPI
 
 on:
-  push:
-    tags:
-      - 'sdk-v*'  # Trigger on tags like sdk-v0.1.0
+  release:
+    types: [published]  # Same trigger as main package
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
@@ -129,7 +128,7 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/sdk-v')  # Only on version tags
+    if: github.event_name == 'release'  # Only on GitHub releases
 
     environment:
       name: pypi
