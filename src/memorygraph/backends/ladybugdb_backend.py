@@ -10,8 +10,6 @@ import os
 from typing import Any, Optional, List, Tuple, Dict
 from pathlib import Path
 
-import real_ladybug as lb
-
 from .base import GraphBackend
 from ..models import (
     Memory,
@@ -72,6 +70,15 @@ class LadybugDBBackend(GraphBackend):
             DatabaseConnectionError: If connection fails
         """
         try:
+            # Lazy import real_ladybug only when connecting
+            try:
+                import real_ladybug as lb
+            except ImportError as e:
+                raise DatabaseConnectionError(
+                    "real_ladybug package is required for LadybugDB backend. "
+                    "Install with: pip install real-ladybug"
+                ) from e
+
             # Create LadybugDB database
             self.client = lb.Database(self.db_path)
 
