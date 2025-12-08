@@ -207,15 +207,22 @@ relationship-aware memory for Claude Code and other MCP clients. Unlike
 vector-based memory, it uses graph databases (Neo4j, Memgraph, FalkorDB, or SQLite)
 to capture how information connects.
 
+**NEW in v0.11**: Python SDK (`memorygraphsdk`) for LlamaIndex, LangChain, CrewAI, and AutoGen integration!
+
 ### Key Features
 - **Zero-config installation**: `pip install memorygraphMCP` with SQLite default
-- **Three deployment modes**: core (9 tools), extended (11 tools)
+- **🆕 Python SDK**: Native integrations for popular AI agent frameworks
+  - LlamaIndex: `MemoryGraphChatMemory`, `MemoryGraphRetriever`
+  - LangChain: `MemoryGraphMemory` with session support
+  - CrewAI: `MemoryGraphCrewMemory` for multi-agent crews
+  - AutoGen: `MemoryGraphAutoGenHistory`
+- **Cloud Backend**: Sync across devices with memorygraph.dev
 - **Graph-based storage**: Captures relationships between memories
 - **Pattern recognition**: Learns from past solutions and decisions
 - **Automatic context extraction**: Extracts structure from natural language
-- **Multi-backend support**: SQLite (default), Neo4j, Memgraph, FalkorDB
+- **Multi-backend support**: SQLite (default), Neo4j, Memgraph, FalkorDB, Cloud
 - **Docker deployment**: One-command setup for all modes
-- **Comprehensive testing**: 890+ passing tests, 82% coverage
+- **Comprehensive testing**: 1,200+ passing tests
 
 ### Why This Server?
 This server uses graph relationships to understand *how* information connects,
@@ -228,10 +235,11 @@ Perfect for developers using Claude Code who want persistent, intelligent memory
 that learns from context and understands relationships.
 
 ### Links
-- Repository: https://github.com/gregorydickson/claude-code-memory
-- PyPI: https://pypi.org/project/memorygraphMCP/
+- Repository: https://github.com/gregorydickson/memory-graph
+- PyPI (MCP): https://pypi.org/project/memorygraphMCP/
+- PyPI (SDK): https://pypi.org/project/memorygraphsdk/
 - Documentation: See README and docs/ folder
-- Installation: `pip install memorygraphMCP`
+- Installation: `pip install memorygraphMCP` or `pip install memorygraphsdk`
 - Quick start: `memorygraph` CLI for setup
 ```
 
