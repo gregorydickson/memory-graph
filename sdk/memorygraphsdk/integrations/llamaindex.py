@@ -7,6 +7,8 @@ chat memory and retrieval systems.
 This integration requires llama-index to be installed:
     pip install memorygraphsdk[llamaindex]
 """
+from __future__ import annotations
+
 from typing import Any, Optional
 
 try:

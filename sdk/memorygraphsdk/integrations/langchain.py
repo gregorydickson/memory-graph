@@ -21,6 +21,8 @@ Note: Requires langchain to be installed:
     # or
     pip install langchain
 """
+from __future__ import annotations
+
 from typing import Any
 
 try:
