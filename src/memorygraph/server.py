@@ -106,42 +106,17 @@ class ClaudeMemoryServer:
         basic_tools = [
             Tool(
                 name="recall_memories",
-                description="""🎯 RECOMMENDED STARTING POINT for recalling past memories and learnings.
+                description="""Primary tool for finding past memories using natural language queries.
 
-This is a convenience tool that wraps search_memories with optimal defaults for natural language queries.
-
-WHEN TO USE:
-- This should be your FIRST tool for any recall query
-- User asks "What did we learn about X?"
-- Looking for past solutions, problems, or patterns
-- Understanding project context or history
-- Finding related memories by topic
-
-WHY USE THIS vs search_memories:
-- Optimized for natural language queries
-- Automatically uses fuzzy matching (handles plurals, tenses, case)
-- Always includes relationship context
-- Simpler interface for common use cases
-- Best default settings applied
-
-HOW TO USE:
-- Pass a natural language query (e.g., "Redis timeout solutions")
-- Optionally filter by memory_types for precision
-- Optionally specify project_path to scope results
-- Results automatically ranked by relevance
+Optimized for fuzzy matching - handles plurals, tenses, and case variations automatically.
+Prefer this over search_memories for most queries.
 
 EXAMPLES:
-- User: "What timeouts have we fixed?" → recall_memories(query="timeout fix")
-- User: "Show me Redis solutions" → recall_memories(query="Redis", memory_types=["solution"])
-- User: "What authentication errors occurred?" → recall_memories(query="authentication error", memory_types=["error"])
-- User: "Catch me up on this project" → recall_memories(project_path="/current/project")
+- recall_memories(query="timeout fix") - find timeout-related solutions
+- recall_memories(query="Redis", memory_types=["solution"]) - Redis solutions only
+- recall_memories(project_path="/app") - memories from specific project
 
-RETURNS:
-- Memories with match quality hints
-- Immediate relationships (what solves what, what causes what)
-- Context summaries for quick understanding
-
-NOTE: For advanced queries (boolean operators, exact matches, multi-term), use search_memories directly.""",
+For exact matching or boolean queries, use search_memories instead.""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -179,31 +154,15 @@ NOTE: For advanced queries (boolean operators, exact matches, multi-term), use s
                 name="store_memory",
                 description="""Store a new memory with context and metadata.
 
-WHEN TO USE:
-- Capturing solutions to problems
-- Recording important decisions and rationale
-- Documenting errors and their causes
-- Noting patterns or learnings from work
-- Saving technology choices and trade-offs
-- Recording project context and state
+Required: type, title, content. Optional: tags, importance (0-1), context.
 
-HOW TO USE:
-- Choose appropriate type: solution, problem, error, fix, decision, pattern, etc.
-- Write clear, searchable title (this is searched during recall)
-- Include detailed content with specifics
-- Add tags for categorical organization (e.g., "redis", "authentication", "performance")
-- Set importance: 0.8-1.0 for critical info, 0.5-0.7 for normal, 0.0-0.4 for reference
-- Optional: Add project_path in context to scope to current project
+Types: solution, problem, error, fix, pattern, decision, task, code_pattern, technology, command, workflow, general
 
 EXAMPLES:
-- Solved a bug: store_memory(type="solution", title="Fixed Redis timeout in payment flow", content="...", tags=["redis", "payment"], importance=0.8)
-- Learned a pattern: store_memory(type="pattern", title="Use exponential backoff for API retries", content="...", tags=["api", "reliability"])
-- Made a decision: store_memory(type="decision", title="Chose PostgreSQL over MongoDB", content="Rationale: ...", importance=0.9)
-- Hit an error: store_memory(type="error", title="Authentication fails with OAuth2", content="Error details...", tags=["auth", "oauth"])
+- store_memory(type="solution", title="Fixed Redis timeout", content="Increased timeout to 30s...", tags=["redis"], importance=0.8)
+- store_memory(type="error", title="OAuth2 auth failure", content="Error details...", tags=["auth"])
 
-AFTER STORING:
-- Use create_relationship to link related memories (e.g., solution SOLVES problem)
-- Returns memory_id for future reference""",
+Returns memory_id. Use create_relationship to link related memories.""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -245,23 +204,12 @@ AFTER STORING:
             ),
             Tool(
                 name="get_memory",
-                description="""Retrieve a specific memory by ID with full details.
+                description="""Retrieve a specific memory by ID.
 
-WHEN TO USE:
-- You have a memory_id from search results
-- User asks for details about a specific memory
-- Need to verify memory contents before updating or deleting
-- Drilling down after finding a memory in search
+Use when you have a memory_id from search results or store_memory.
+Set include_relationships=true (default) to see connected memories.
 
-HOW TO USE:
-- Pass memory_id from search_memories or store_memory results
-- Set include_relationships=true (default) to see what connects to this memory
-- Returns full memory with all fields
-
-EXAMPLE:
-- After search: get_memory(memory_id="abc-123", include_relationships=true)
-
-NOTE: Prefer search_memories for discovery. Use get_memory only when you have a specific ID.""",
+EXAMPLE: get_memory(memory_id="abc-123")""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -279,41 +227,16 @@ NOTE: Prefer search_memories for discovery. Use get_memory only when you have a 
             ),
             Tool(
                 name="search_memories",
-                description="""Advanced search tool with fine-grained control over search parameters.
+                description="""Advanced search with fine-grained filters. Use recall_memories first for simple queries.
 
-⚠️ CONSIDER USING recall_memories FIRST - it has better defaults for most queries.
-Use search_memories only when you need:
-- Exact matching (search_tolerance="strict")
-- Multi-term boolean queries
-- Specific tag filtering
-- Advanced parameter control
+Use this when you need: exact matching (search_tolerance="strict"), tag filtering, importance thresholds, or multi-term boolean queries.
 
-WHEN TO USE:
-- Need strict exact matching instead of fuzzy
-- Complex queries with multiple terms and match_mode
-- Filtering by specific tags or importance thresholds
-- When recall_memories didn't find what you need
-
-HOW TO USE:
-- Query searches across title, content, and summary fields
-- Use search_tolerance to control matching:
-  • 'normal' (default): Handles plurals, tenses, case variations (e.g., "timeout" matches "timeouts", "timed out")
-  • 'strict': Exact substring matches only
-  • 'fuzzy': Reserved for future typo tolerance
-- Filter by memory_types to narrow results (e.g., only "solution" or "problem")
-- Filter by tags for categorical search
-- Results include relationship context automatically (what connects to what)
+Params: query, memory_types, tags, min_importance, search_tolerance (strict/normal/fuzzy), match_mode (any/all)
 
 EXAMPLES:
-- User: "What timeouts have we fixed?" → search_memories(query="timeout", memory_types=["solution"])
-- User: "Show me Redis issues" → search_memories(query="Redis", memory_types=["problem", "error"])
-- User: "Authentication solutions" → search_memories(query="authentication", memory_types=["solution"])
-- User: "High priority items" → search_memories(min_importance=0.7)
-
-RESULTS INCLUDE:
-- Match quality hints (which fields matched)
-- Relationship context (what solves/causes/relates to what)
-- Context summaries for quick scanning""",
+- search_memories(query="timeout", memory_types=["solution"]) - timeout solutions
+- search_memories(tags=["redis"], min_importance=0.7) - important Redis memories
+- search_memories(query="auth", search_tolerance="strict") - exact match only""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -420,39 +343,15 @@ RESULTS INCLUDE:
             ),
             Tool(
                 name="create_relationship",
-                description="""Create a relationship between two memories to capture how they connect.
+                description="""Link two memories with a typed relationship.
 
-WHEN TO USE:
-- After storing a solution, link it to the problem it solves
-- Connect an error to its fix
-- Link a decision to what it improves or replaces
-- Associate patterns with where they apply
-- Track what causes what (e.g., error TRIGGERS problem)
-- Document what requires what (dependencies)
-
-HOW TO USE:
-- Get memory IDs from store_memory or search_memories
-- Choose appropriate relationship type:
-  • SOLVES: solution → problem/error
-  • CAUSES/TRIGGERS: cause → effect
-  • FIXES/ADDRESSES: fix → error/problem
-  • IMPROVES/REPLACES: new approach → old approach
-  • REQUIRES/DEPENDS_ON: dependent → dependency
-  • USED_IN/APPLIES_TO: pattern → project/context
-  • RELATED_TO: general association
-- Optional: Add natural language context (auto-extracted into structured format)
-- Optional: Set strength (defaults to 0.5) and confidence (defaults to 0.8)
+Common types: SOLVES (solution→problem), CAUSES (cause→effect), FIXES (fix→error), REQUIRES (dependent→dependency), RELATED_TO (general)
 
 EXAMPLES:
-- Link solution to problem: create_relationship(from_memory_id="sol-123", to_memory_id="prob-456", relationship_type="SOLVES")
-- Document cause: create_relationship(from_memory_id="config-error", to_memory_id="timeout-problem", relationship_type="CAUSES", context="Missing Redis timeout config causes connection timeouts in production")
-- Track dependency: create_relationship(from_memory_id="auth-module", to_memory_id="jwt-library", relationship_type="REQUIRES")
-- Pattern usage: create_relationship(from_memory_id="retry-pattern", to_memory_id="api-integration", relationship_type="APPLIES_TO")
+- create_relationship(from_memory_id="sol-1", to_memory_id="prob-1", relationship_type="SOLVES")
+- create_relationship(from_memory_id="err-1", to_memory_id="fix-1", relationship_type="CAUSES", context="Config error caused timeout")
 
-WHY IT MATTERS:
-- Relationships enable "What solved X?" queries
-- Builds knowledge graph for pattern recognition
-- Context is automatically structured for advanced queries""",
+Optional: strength (0-1), confidence (0-1), context (description)""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -491,33 +390,13 @@ WHY IT MATTERS:
             ),
             Tool(
                 name="get_related_memories",
-                description="""Find memories related to a specific memory by traversing relationships.
+                description="""Find memories connected to a specific memory via relationships.
 
-WHEN TO USE:
-- After finding a memory, explore what connects to it
-- User asks "What caused this?" or "What solves this?"
-- Understanding the context around a specific memory
-- Following chains of reasoning (what led to what)
-- Finding all solutions for a problem
-
-HOW TO USE:
-- Pass memory_id from search_memories or get_memory
-- Filter by relationship_types to focus query:
-  • ["SOLVES"] → Find all solutions for a problem
-  • ["CAUSES", "TRIGGERS"] → Find what causes this
-  • ["USED_IN", "APPLIES_TO"] → Find where a pattern applies
-- Set max_depth to control traversal:
-  • 1 = immediate connections only (default)
-  • 2 = connections of connections
-  • 3+ = deeper traversal (rarely needed)
+Filter by relationship_types (e.g., ["SOLVES"], ["CAUSES"]) and max_depth (default 1).
 
 EXAMPLES:
-- Find solutions: get_related_memories(memory_id="problem-123", relationship_types=["SOLVES"], max_depth=1)
-- Explore context: get_related_memories(memory_id="decision-456", max_depth=2)
-- Find causes: get_related_memories(memory_id="error-789", relationship_types=["CAUSES", "TRIGGERS"])
-
-RETURNS:
-- List of related memories with relationship types and strengths""",
+- get_related_memories(memory_id="prob-1", relationship_types=["SOLVES"]) - find solutions
+- get_related_memories(memory_id="err-1", relationship_types=["CAUSES"], max_depth=2) - find root causes""",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -553,35 +432,13 @@ RETURNS:
             ),
             Tool(
                 name="get_recent_activity",
-                description="""Get a summary of recent memory activity for session briefing.
+                description="""Get summary of recent memory activity for session context.
 
-WHEN TO USE:
-- User asks "What have we been working on?"
-- User asks "Catch me up" or "What's the status?"
-- Starting a new session and want context
-- Need to understand recent progress
-
-HOW TO USE:
-- Specify days (default: 7) to control timeframe
-- Optionally filter by project to scope to current work
-- Returns summary by type, recent memories, and unresolved problems
-
-WHAT YOU GET:
-- Count of memories by type (solutions, problems, etc.)
-- List of recent memories (up to 20)
-- Unresolved problems (problems with no solution yet)
-- Time range and filters applied
+Returns: memory counts by type, recent memories (up to 20), unresolved problems.
 
 EXAMPLES:
-- User: "What have we been working on?" → get_recent_activity(days=7)
-- User: "Catch me up on this project" → get_recent_activity(days=7, project="/current/project")
-- User: "What happened last month?" → get_recent_activity(days=30)
-- User: "Any unsolved problems?" → get_recent_activity(days=30) // check unresolved_problems
-
-WHY IT MATTERS:
-- Provides quick context at session start
-- Identifies work that needs attention (unresolved problems)
-- Shows progress and activity patterns""",
+- get_recent_activity(days=7) - last week's activity
+- get_recent_activity(days=30, project="/app") - last month for specific project""",
                 inputSchema={
                     "type": "object",
                     "properties": {

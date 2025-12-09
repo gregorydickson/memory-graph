@@ -13,6 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
+## [0.11.10] - 2025-12-09
+
+### Changed
+- **Tool Descriptions Optimized**: Reduced tool description token overhead by ~16%
+  - Streamlined descriptions to match peer MCP server patterns (~891 tokens/tool avg, down from ~1,063)
+  - Removed verbose "WHEN TO USE", "WHY IT MATTERS", and "RETURNS" sections
+  - Reduced examples from 4 to 2-3 per tool while maintaining clarity
+  - Kept essential guidance: clear purpose, practical examples, key parameter info
+
+## [0.11.9] - 2025-12-09
+
+### Fixed
+- **LlamaIndex Integration**: Added `from_defaults` classmethod to `MemoryGraphChatMemory`
+  - Fixes `TypeError: Can't instantiate abstract class MemoryGraphChatMemory with abstract method from_defaults`
+  - Required due to LlamaIndex `BaseMemory` interface change requiring this method
+  - Follows LlamaIndex convention (e.g., `ChatMemoryBuffer.from_defaults()`)
+
 ## [0.11.8] - 2025-12-09
 
 ### Fixed
