@@ -181,11 +181,12 @@ async def handle_get_recent_activity(
         )
 
     except Exception as e:
-        logger.error(f"Error in get_recent_activity: {e}")
+        import traceback
+        logger.error(f"Error in get_recent_activity: {e}\n{traceback.format_exc()}")
         return CallToolResult(
             content=[TextContent(
                 type="text",
-                text=f"Failed to get recent activity: {e}"
+                text=f"Failed to get recent activity: {e}\nTraceback: {traceback.format_exc()}"
             )],
             isError=True
         )
