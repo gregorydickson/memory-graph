@@ -72,12 +72,12 @@ class MockHTTPClient:
             })
 
         # Search memories (check before general /memories/ pattern)
-        if url == "/memories/search" and method == "POST":
+        if url == "/search/advanced" and method == "POST":
             results = self._search_memories(json)
             return self._create_response(200, {"memories": results})
 
         # Recall memories (check before general /memories/ pattern)
-        if url == "/memories/recall" and method == "POST":
+        if url == "/search/recall" and method == "POST":
             results = self._search_memories(json)
             return self._create_response(200, {"memories": results})
 
@@ -89,16 +89,21 @@ class MockHTTPClient:
             self.memories[memory_id] = memory_data
             return self._create_response(200, {"id": memory_id})
 
+        # Get related memories (new endpoint path: /search/memories/{id}/related)
+        if url.startswith("/search/memories/") and method == "GET":
+            parts = url.split("/")
+            if len(parts) >= 4:
+                memory_id = parts[3].split("?")[0]  # Extract memory_id
+                if url.endswith("/related") or "/related?" in url:
+                    return self._handle_related_memories(memory_id, params)
+            return self._create_response(404, {"detail": "Not found"})
+
         # Get memory
         if url.startswith("/memories/") and method == "GET":
             # Extract memory_id from URL
             parts = url.split("/")
             if len(parts) >= 3:
                 memory_id = parts[2].split("?")[0]  # Remove query params
-
-                # Check if it's a related memories request
-                if url.endswith("/related") or "/related?" in url:
-                    return self._handle_related_memories(memory_id, params)
 
                 # Regular get memory
                 if memory_id in self.memories:
