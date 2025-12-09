@@ -7,9 +7,7 @@ chat memory and retrieval systems.
 This integration requires llama-index to be installed:
     pip install memorygraphsdk[llamaindex]
 """
-from __future__ import annotations
-
-from typing import Any, Optional
+from typing import Any
 
 try:
     from llama_index.core.base.llms.types import ChatMessage, MessageRole
@@ -90,7 +88,7 @@ class MemoryGraphChatMemory(BaseMemory):
         object.__setattr__(self, "client", MemoryGraphClient(api_key=api_key, api_url=api_url))
         object.__setattr__(self, "session_id", session_id)
 
-    def get(self, input: Optional[str] = None, **kwargs: Any) -> list[ChatMessage]:
+    def get(self, input: str | None = None, **kwargs: Any) -> list[ChatMessage]:
         """
         Get relevant memories for the input.
 
@@ -218,9 +216,9 @@ class MemoryGraphRetriever:
     def __init__(
         self,
         api_key: str | None = None,
-        memory_types: Optional[list[str]] = None,
+        memory_types: list[str] | None = None,
         api_url: str = "https://api.memorygraph.dev",
-        min_importance: Optional[float] = None,
+        min_importance: float | None = None,
     ):
         """
         Initialize MemoryGraph retriever.

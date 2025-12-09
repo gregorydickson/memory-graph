@@ -1,7 +1,6 @@
 """
 Exceptions for MemoryGraph SDK.
 """
-from __future__ import annotations
 
 
 class MemoryGraphError(Exception):
