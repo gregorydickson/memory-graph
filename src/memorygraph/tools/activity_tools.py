@@ -8,13 +8,36 @@ This module contains handlers for activity and statistics operations:
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from mcp.types import CallToolResult, TextContent
 
 from ..database import MemoryDatabase
+from ..models import Memory
 
 logger = logging.getLogger(__name__)
+
+
+def _get_memory_attr(memory: Union[Memory, Dict[str, Any]], attr: str, default: Any = None) -> Any:
+    """Get attribute from Memory object or dict, handling both cases.
+
+    Args:
+        memory: Memory object or dict representation
+        attr: Attribute name to retrieve
+        default: Default value if attribute not found
+
+    Returns:
+        Attribute value or default
+    """
+    if hasattr(memory, attr):
+        value = getattr(memory, attr)
+        # Handle nested attributes like type.value
+        if attr == "type" and hasattr(value, "value"):
+            return value.value
+        return value
+    elif isinstance(memory, dict):
+        return memory.get(attr, default)
+    return default
 
 
 async def handle_get_memory_statistics(
@@ -125,18 +148,24 @@ async def handle_get_recent_activity(
         if activity['unresolved_problems']:
             result_text += f"**⚠️ Unresolved Problems ({len(activity['unresolved_problems'])})**:\n"
             for problem in activity['unresolved_problems']:
-                result_text += f"- **{problem.title}** (importance: {problem.importance:.1f})\n"
-                if problem.summary:
-                    result_text += f"  {problem.summary}\n"
+                title = _get_memory_attr(problem, 'title', 'Unknown')
+                importance = _get_memory_attr(problem, 'importance', 0.5)
+                summary = _get_memory_attr(problem, 'summary')
+                result_text += f"- **{title}** (importance: {importance:.1f})\n"
+                if summary:
+                    result_text += f"  {summary}\n"
             result_text += "\n"
 
         # Recent memories
         if activity['recent_memories']:
             result_text += f"**Recent Memories** (showing {min(10, len(activity['recent_memories']))}):\n"
             for i, memory in enumerate(activity['recent_memories'][:10], 1):
-                result_text += f"{i}. **{memory.title}** ({memory.type.value})\n"
-                if memory.summary:
-                    result_text += f"   {memory.summary}\n"
+                title = _get_memory_attr(memory, 'title', 'Unknown')
+                mem_type = _get_memory_attr(memory, 'type', 'general')
+                summary = _get_memory_attr(memory, 'summary')
+                result_text += f"{i}. **{title}** ({mem_type})\n"
+                if summary:
+                    result_text += f"   {summary}\n"
             result_text += "\n"
 
         # Next steps suggestion
