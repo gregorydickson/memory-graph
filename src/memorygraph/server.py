@@ -27,7 +27,9 @@ from pydantic import ValidationError
 from . import __version__
 from .database import MemoryDatabase
 from .sqlite_database import SQLiteMemoryDatabase
+from .cloud_database import CloudMemoryDatabase
 from .backends.sqlite_fallback import SQLiteFallbackBackend
+from .backends.cloud_backend import CloudBackend
 from .models import (
     Memory,
     MemoryType,
@@ -806,10 +808,13 @@ RETURNS:
             from .backends.factory import BackendFactory
             self.db_connection = await BackendFactory.create_backend()
 
-            # Initialize memory database - use SQLiteMemoryDatabase for SQLite backend
+            # Initialize memory database - choose wrapper based on backend type
             if isinstance(self.db_connection, SQLiteFallbackBackend):
                 logger.info("Using SQLiteMemoryDatabase for SQLite backend")
                 self.memory_db = SQLiteMemoryDatabase(self.db_connection)
+            elif isinstance(self.db_connection, CloudBackend):
+                logger.info("Using CloudMemoryDatabase for Cloud backend")
+                self.memory_db = CloudMemoryDatabase(self.db_connection)
             else:
                 logger.info("Using MemoryDatabase for Cypher-compatible backend")
                 self.memory_db = MemoryDatabase(self.db_connection)
