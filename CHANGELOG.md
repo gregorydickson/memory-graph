@@ -7,11 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned (v0.11+)
+### Planned (v0.12+)
 - Web visualization dashboard
 - PostgreSQL backend support (pg_graph)
 - Enhanced embedding support
 - Workflow automation templates
+
+## [0.11.8] - 2025-12-09
+
+### Fixed
+- **Cloud Backend**: Fixed API endpoint paths for graph-api.memorygraph.dev
+  - `search_memories`: Changed from `/memories/search` to `/search/advanced`
+  - `recall_memories`: Changed from `/memories/recall` to `/search/recall`
+  - `get_related_memories`: Changed from `/memories/{id}/related` to `/search/memories/{id}/related`
+- **Activity Tools**: Changed `isinstance()` checks to `hasattr()` for better backend compatibility
+  - `get_recent_activity` and `search_relationships_by_context` now work with any backend that implements the required methods
+  - Removed tight coupling to `SQLiteMemoryDatabase`
+
+### Changed
+- Updated test mocks to use new cloud API endpoint paths
+
+## [0.11.7] - 2025-12-09
+
+### Fixed
+- **Cloud Backend**: Added `CloudMemoryDatabase` wrapper class that delegates to `CloudBackend`'s REST API methods instead of trying to use Cypher queries directly
 
 ## [0.10.0] - 2025-12-08
 
