@@ -13,7 +13,6 @@ from typing import Any, Dict
 from mcp.types import CallToolResult, TextContent
 
 from ..database import MemoryDatabase
-from ..sqlite_database import SQLiteMemoryDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +84,11 @@ async def handle_get_recent_activity(
     """
     try:
         # Check if database supports get_recent_activity
-        if not isinstance(memory_db, SQLiteMemoryDatabase):
+        if not hasattr(memory_db, 'get_recent_activity'):
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text="Recent activity summary is only available with SQLite backend"
+                    text="Recent activity summary is not supported by this backend"
                 )],
                 isError=True
             )
@@ -184,12 +183,12 @@ async def handle_search_relationships_by_context(
         CallToolResult with formatted relationship results or error message
     """
     try:
-        # Use SQLiteMemoryDatabase's search_relationships_by_context method
-        if not isinstance(memory_db, SQLiteMemoryDatabase):
+        # Check if database supports search_relationships_by_context method
+        if not hasattr(memory_db, 'search_relationships_by_context'):
             return CallToolResult(
                 content=[TextContent(
                     type="text",
-                    text="Context-based relationship search is only available with SQLite backend"
+                    text="Context-based relationship search is not supported by this backend"
                 )],
                 isError=True
             )

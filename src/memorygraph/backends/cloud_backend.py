@@ -593,7 +593,7 @@ class CloudBackend(GraphBackend):
         try:
             result = await self._request(
                 "GET",
-                f"/memories/{memory_id}/related",
+                f"/search/memories/{memory_id}/related",
                 params=params
             )
         except MemoryNotFoundError:
@@ -664,7 +664,7 @@ class CloudBackend(GraphBackend):
         if search_query.offset:
             payload["offset"] = search_query.offset
 
-        result = await self._request("POST", "/memories/search", json=payload)
+        result = await self._request("POST", "/search/advanced", json=payload)
 
         memories = []
         for item in result.get("memories", result.get("results", [])):
@@ -705,7 +705,7 @@ class CloudBackend(GraphBackend):
         if project_path:
             payload["project_path"] = project_path
 
-        result = await self._request("POST", "/memories/recall", json=payload)
+        result = await self._request("POST", "/search/recall", json=payload)
 
         memories = []
         for item in result.get("memories", result.get("results", [])):
