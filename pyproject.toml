@@ -7,7 +7,7 @@ name = "memorygraphMCP"
 version = "0.11.7"
 description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
-    {name = "Gregory Dickson", email = "gregory@example.com"}
+    {name = "Gregory Dickson", email = "gregory.d.dickson@gmail.com"}
 ]
 readme = "README.md"
 license = {file = "LICENSE"}

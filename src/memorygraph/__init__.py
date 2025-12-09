@@ -9,7 +9,7 @@ Supports multiple backends: SQLite (default), Neo4j, and Memgraph.
 
 __version__ = "0.11.7"
 __author__ = "Gregory Dickson"
-__email__ = "gregory@example.com"
+__email__ = "gregory.d.dickson@gmail.com"
 
 from .server import ClaudeMemoryServer
 from .models import (
