@@ -345,7 +345,7 @@ EXAMPLES:
                 name="create_relationship",
                 description="""Link two memories with a typed relationship.
 
-Common types: SOLVES (solution→problem), CAUSES (cause→effect), FIXES (fix→error), REQUIRES (dependent→dependency), RELATED_TO (general)
+Common types: SOLVES (solution→problem), CAUSES (cause→effect), ADDRESSES (fix→error), REQUIRES (dependent→dependency), RELATED_TO (general)
 
 EXAMPLES:
 - create_relationship(from_memory_id="sol-1", to_memory_id="prob-1", relationship_type="SOLVES")
@@ -365,7 +365,6 @@ Optional: strength (0-1), confidence (0-1), context (description)""",
                         },
                         "relationship_type": {
                             "type": "string",
-                            "enum": [t.value for t in RelationshipType],
                             "description": "Type of relationship to create"
                         },
                         "strength": {
@@ -407,8 +406,7 @@ EXAMPLES:
                         "relationship_types": {
                             "type": "array",
                             "items": {
-                                "type": "string",
-                                "enum": [t.value for t in RelationshipType]
+                                "type": "string"
                             },
                             "description": "Filter by relationship types"
                         },
