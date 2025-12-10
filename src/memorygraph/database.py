@@ -248,17 +248,36 @@ class MemoryDatabase:
         LadybugDB uses different Cypher syntax than Neo4j.
         LadybugDB requires NODE TABLE before REL TABLE.
 
+        Supports two modes:
+        - Weakly-typed (default): Single Memory NODE TABLE + generic REL TABLE
+        - Strongly-typed: 12 NODE TABLEs (one per MemoryType) + 35 REL TABLEs (one per RelationshipType)
+
+        Mode is controlled by MEMORY_LADYBUGDB_STRONGLY_TYPED env var.
+
         Raises:
             SchemaError: If schema creation fails
         """
-        logger.info("Initializing LadybugDB schema for Claude Memory...")
+        from .config import Config
 
-        # LadybugDB cannot create unique constraints beyond primary key and not null
-        # Create NODE TABLE first, then REL TABLE
+        strongly_typed = Config.LADYBUGDB_STRONGLY_TYPED
 
+        if strongly_typed:
+            logger.info("Initializing LadybugDB strongly-typed schema (12 NODE + 35 REL tables)...")
+            await self._initialize_ladybugdb_strongly_typed_schema()
+        else:
+            logger.info("Initializing LadybugDB weakly-typed schema (backward compatible)...")
+            await self._initialize_ladybugdb_weakly_typed_schema()
+
+        logger.info("LadybugDB schema initialization completed")
+
+    async def _initialize_ladybugdb_weakly_typed_schema(self) -> None:
+        """Create weakly-typed LadybugDB schema (backward compatible).
+
+        Single Memory NODE TABLE + generic REL TABLE.
+        """
         # Create Memory node table using LadybugDB syntax
         create_memory_table = """
-        CREATE NODE TABLE Memory(
+        CREATE NODE TABLE IF NOT EXISTS Memory(
             id STRING PRIMARY KEY,
             type STRING,
             title STRING,
@@ -282,7 +301,7 @@ class MemoryDatabase:
         # Create REL table for relationships using LadybugDB syntax
         # This requires the Memory node table to exist first
         create_relationship_table = """
-        CREATE REL TABLE REL(
+        CREATE REL TABLE IF NOT EXISTS REL(
             FROM Memory TO Memory,
             id STRING,
             type STRING,
@@ -292,9 +311,6 @@ class MemoryDatabase:
             metadata STRING
         )
         """
-
-        # LadybugDB doesn't support CREATE INDEX at all, so we skip indexes
-        # The primary keys will provide indexing automatically
 
         # Install and load FTS extension, then create fulltext index using LadybugDB syntax
         fulltext_setup = [
@@ -318,15 +334,125 @@ class MemoryDatabase:
             if "already exists" not in str(e).lower():
                 logger.warning(f"Failed to create REL table: {e}")
 
-        for fts_index in fulltext_setup:
+        for fts_query in fulltext_setup:
             try:
-                await self.connection.execute_write_query(fts_index)
-                logger.debug(f"Created fulltext index: {fts_index}")
+                await self.connection.execute_write_query(fts_query)
+                logger.debug(f"Executed FTS setup: {fts_query}")
+            except Exception as e:
+                if "already exists" not in str(e).lower() and "already installed" not in str(e).lower():
+                    logger.warning(f"Failed to execute FTS setup: {e}")
+
+    async def _initialize_ladybugdb_strongly_typed_schema(self) -> None:
+        """Create strongly-typed LadybugDB schema.
+
+        Creates 12 NODE TABLEs (one per MemoryType) and 35 REL TABLEs (one per RelationshipType).
+        Each REL TABLE specifies allowed source/target memory types.
+        """
+        # Define common node properties
+        node_properties = """
+            id STRING PRIMARY KEY,
+            title STRING,
+            content STRING,
+            summary STRING,
+            tags STRING,
+            importance DOUBLE,
+            confidence DOUBLE,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            context_project_path STRING,
+            context_file_path STRING,
+            context_line_start INT,
+            context_line_end INT,
+            context_commit_hash STRING,
+            context_branch STRING,
+            metadata STRING
+        """
+
+        # Create 12 NODE TABLEs (one for each MemoryType)
+        memory_types = [
+            "TASK", "CODE_PATTERN", "PROBLEM", "SOLUTION", "PROJECT",
+            "TECHNOLOGY", "ERROR", "FIX", "COMMAND", "FILE_CONTEXT",
+            "WORKFLOW", "GENERAL"
+        ]
+
+        for mem_type in memory_types:
+            create_table = f"""
+            CREATE NODE TABLE IF NOT EXISTS {mem_type}(
+                {node_properties}
+            )
+            """
+            try:
+                await self.connection.execute_write_query(create_table)
+                logger.debug(f"Created {mem_type} node table")
             except Exception as e:
                 if "already exists" not in str(e).lower():
-                    logger.warning(f"Failed to create fulltext index: {e}")
+                    logger.warning(f"Failed to create {mem_type} node table: {e}")
 
-        logger.info("LadybugDB schema initialization completed")
+        # Define common relationship properties
+        rel_properties = """
+            id STRING,
+            strength DOUBLE,
+            confidence DOUBLE,
+            context STRING,
+            evidence_count INT,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP,
+            metadata STRING
+        """
+
+        # Create 35 REL TABLEs (one for each RelationshipType)
+        # Map relationship types to allowed source/target combinations
+        # For simplicity, allow any memory type combination (can be refined later)
+        all_node_types = " | ".join(memory_types)
+
+        relationship_types = [
+            "CAUSES", "TRIGGERS", "LEADS_TO", "PREVENTS", "BREAKS",
+            "SOLVES", "ADDRESSES", "ALTERNATIVE_TO", "IMPROVES", "REPLACES",
+            "OCCURS_IN", "APPLIES_TO", "WORKS_WITH", "REQUIRES", "USED_IN",
+            "BUILDS_ON", "CONTRADICTS", "CONFIRMS", "GENERALIZES", "SPECIALIZES",
+            "SIMILAR_TO", "VARIANT_OF", "RELATED_TO", "ANALOGY_TO", "OPPOSITE_OF",
+            "FOLLOWS", "DEPENDS_ON", "ENABLES", "BLOCKS", "PARALLEL_TO",
+            "EFFECTIVE_FOR", "INEFFECTIVE_FOR", "PREFERRED_OVER", "DEPRECATED_BY", "VALIDATED_BY"
+        ]
+
+        for rel_type in relationship_types:
+            create_rel_table = f"""
+            CREATE REL TABLE IF NOT EXISTS {rel_type}(
+                FROM {all_node_types} TO {all_node_types},
+                {rel_properties}
+            )
+            """
+            try:
+                await self.connection.execute_write_query(create_rel_table)
+                logger.debug(f"Created {rel_type} relationship table")
+            except Exception as e:
+                if "already exists" not in str(e).lower():
+                    logger.warning(f"Failed to create {rel_type} relationship table: {e}")
+
+        # Install and load FTS extension
+        # In strongly-typed mode, we need to create FTS index for each node type
+        fulltext_setup = [
+            "INSTALL FTS",
+            "LOAD EXTENSION FTS",
+        ]
+
+        for fts_query in fulltext_setup:
+            try:
+                await self.connection.execute_write_query(fts_query)
+                logger.debug(f"Executed FTS setup: {fts_query}")
+            except Exception as e:
+                if "already exists" not in str(e).lower() and "already installed" not in str(e).lower():
+                    logger.warning(f"Failed to execute FTS setup: {e}")
+
+        # Create FTS index for each memory type
+        for mem_type in memory_types:
+            fts_index_query = f"CALL CREATE_FTS_INDEX('{mem_type}', '{mem_type.lower()}_content_index', ['title', 'content', 'summary'])"
+            try:
+                await self.connection.execute_write_query(fts_index_query)
+                logger.debug(f"Created FTS index for {mem_type}")
+            except Exception as e:
+                if "already exists" not in str(e).lower():
+                    logger.warning(f"Failed to create FTS index for {mem_type}: {e}")
 
     async def initialize_neo4j_schema(self) -> None:
         """Create Neo4j database schema, constraints, and indexes.

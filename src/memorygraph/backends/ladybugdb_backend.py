@@ -48,7 +48,7 @@ class LadybugDBBackend(GraphBackend):
         Initialize LadybugDB backend.
 
         Args:
-            db_path: Path to database file (defaults to LADYBUGDB_PATH env var or ~/.memorygraph/ladybugdb.db)
+            db_path: Path to database file (defaults to MEMORY_LADYBUGDB_PATH env var or ~/.memorygraph/ladybugdb.db)
             graph_name: Name of the graph database (defaults to 'memorygraph')
 
         Raises:
@@ -60,13 +60,8 @@ class LadybugDBBackend(GraphBackend):
                 "Install it with: pip install real-ladybug"
             )
         if db_path is None:
-            db_path = os.getenv("LADYBUGDB_PATH")
-            if db_path is None:
-                # Default to ~/.memorygraph/ladybugdb.db
-                home = Path.home()
-                db_dir = home / ".memorygraph"
-                db_dir.mkdir(parents=True, exist_ok=True)
-                db_path = str(db_dir / "ladybugdb.db")
+            # Use Config to get the path (which reads MEMORY_LADYBUGDB_PATH)
+            db_path = Config.LADYBUGDB_PATH
 
         self.db_path = db_path
         self.graph_name = graph_name
@@ -123,16 +118,26 @@ class LadybugDBBackend(GraphBackend):
 
         Args:
             query: Cypher query string
-            parameters: Query parameters
+            parameters: Query parameters (will be substituted into query)
             write: Whether this is a write operation
 
         Returns:
             List of result dictionaries
+
+        Note:
+            LadybugDB doesn't support parameterized queries like Neo4j.
+            Parameters are substituted directly into the query string.
+            Use this with caution - ensure parameters are properly validated.
         """
         if not self._connected or not self.graph:
             raise DatabaseConnectionError("Not connected to LadybugDB")
 
         try:
+            # Substitute parameters into query if provided
+            # LadybugDB doesn't support Neo4j-style parameterized queries ($param)
+            if parameters:
+                query = self._substitute_parameters(query, parameters)
+
             # Execute query using LadybugDB's connection
             result = self.graph.execute(query)
 
@@ -150,9 +155,53 @@ class LadybugDBBackend(GraphBackend):
             logger.error(f"Query execution failed: {e}")
             raise SchemaError(f"Query execution failed: {e}")
 
+    def _substitute_parameters(self, query: str, parameters: dict[str, Any]) -> str:
+        """
+        Substitute parameters into a Cypher query string.
+
+        Args:
+            query: Query string with $param placeholders
+            parameters: Dictionary of parameter values
+
+        Returns:
+            Query string with parameters substituted
+
+        Note:
+            This is a simple string substitution. For production use,
+            consider more robust parameter escaping and validation.
+        """
+        result = query
+        for key, value in parameters.items():
+            placeholder = f"${key}"
+            # Convert value to appropriate string representation
+            if isinstance(value, str):
+                # Escape single quotes in strings
+                escaped_value = value.replace("'", "\\'")
+                substituted_value = f"'{escaped_value}'"
+            elif isinstance(value, bool):
+                # Python bool to Cypher bool (lowercase)
+                substituted_value = str(value).lower()
+            elif isinstance(value, (int, float)):
+                substituted_value = str(value)
+            elif value is None:
+                substituted_value = "null"
+            elif isinstance(value, (list, dict)):
+                # For complex types, use JSON representation
+                substituted_value = json.dumps(value)
+            else:
+                # Fallback: convert to string and quote
+                substituted_value = f"'{str(value)}'"
+
+            result = result.replace(placeholder, substituted_value)
+
+        return result
+
     async def initialize_schema(self) -> None:
         """
         Initialize database schema including indexes and constraints.
+
+        This method delegates to MemoryDatabase.initialize_ladybugdb_schema()
+        which handles both weakly-typed and strongly-typed schema creation.
 
         This should be idempotent and safe to call multiple times.
 
@@ -162,22 +211,14 @@ class LadybugDBBackend(GraphBackend):
         if not self._connected or not self.graph:
             raise DatabaseConnectionError("Not connected to LadybugDB")
 
-        try:
-            # Create basic schema - indexes and constraints
-            # Note: LadybugDB Cypher syntax may vary, adjust as needed
-            schema_queries = [
-                "CREATE INDEX IF NOT EXISTS FOR (n:Memory) ON (n.id)",
-                "CREATE INDEX IF NOT EXISTS FOR (n:Memory) ON (n.type)",
-                "CREATE INDEX IF NOT EXISTS FOR (n:Memory) ON (n.created_at)",
-                "CREATE CONSTRAINT IF NOT EXISTS FOR (n:Memory) REQUIRE n.id IS UNIQUE",
-            ]
+        # Schema initialization is handled by MemoryDatabase.initialize_ladybugdb_schema()
+        # This backend's initialize_schema is only called directly in testing
+        # In production, MemoryDatabase.initialize_schema() calls initialize_ladybugdb_schema()
 
-            for query in schema_queries:
-                await self.execute_query(query, write=True)
-
-        except Exception as e:
-            logger.error(f"Schema initialization failed: {e}")
-            raise SchemaError(f"Schema initialization failed: {e}")
+        # For backward compatibility, we'll delegate to the database wrapper
+        from ..database import MemoryDatabase
+        db = MemoryDatabase(self)
+        await db.initialize_ladybugdb_schema()
 
     async def health_check(self) -> dict[str, Any]:
         """
@@ -225,8 +266,8 @@ class LadybugDBBackend(GraphBackend):
         Returns:
             True if full-text search is supported
         """
-        # LadybugDB may support full-text search, but we'll be conservative
-        return False
+        # LadybugDB supports FTS via extension (INSTALL FTS, LOAD EXTENSION FTS)
+        return True
 
     def supports_transactions(self) -> bool:
         """

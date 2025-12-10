@@ -86,6 +86,10 @@ class Config:
             TURSO_DATABASE_URL: Turso database URL (e.g., libsql://your-db.turso.io)
             TURSO_AUTH_TOKEN: Turso authentication token
 
+        LadybugDB Configuration:
+            MEMORY_LADYBUGDB_PATH: Database file path [default: ~/.memorygraph/ladybugdb.db]
+            MEMORY_LADYBUGDB_STRONGLY_TYPED: Use strongly-typed schema (12 NODE + 35 REL tables) [default: false]
+
         Cloud Configuration:
             MEMORYGRAPH_API_KEY: API key for MemoryGraph Cloud (required for cloud backend)
             MEMORYGRAPH_API_URL: Cloud API base URL [default: https://graph-api.memorygraph.dev]
@@ -132,6 +136,10 @@ class Config:
     TURSO_PATH: str = os.getenv("MEMORY_TURSO_PATH", os.path.expanduser("~/.memorygraph/memory.db"))
     TURSO_DATABASE_URL: Optional[str] = os.getenv("TURSO_DATABASE_URL")
     TURSO_AUTH_TOKEN: Optional[str] = os.getenv("TURSO_AUTH_TOKEN")
+
+    # LadybugDB Configuration
+    LADYBUGDB_PATH: str = os.getenv("MEMORY_LADYBUGDB_PATH", os.path.expanduser("~/.memorygraph/ladybugdb.db"))
+    LADYBUGDB_STRONGLY_TYPED: bool = os.getenv("MEMORY_LADYBUGDB_STRONGLY_TYPED", "false").lower() == "true"
 
     # Cloud Configuration
     MEMORYGRAPH_API_KEY: Optional[str] = os.getenv("MEMORYGRAPH_API_KEY")
@@ -256,6 +264,10 @@ class Config:
                 "path": cls.TURSO_PATH,
                 "database_url": cls.TURSO_DATABASE_URL,
                 "auth_token_configured": bool(cls.TURSO_AUTH_TOKEN)
+            },
+            "ladybugdb": {
+                "path": cls.LADYBUGDB_PATH,
+                "strongly_typed": cls.LADYBUGDB_STRONGLY_TYPED
             },
             "cloud": {
                 "api_url": cls.MEMORYGRAPH_API_URL,
