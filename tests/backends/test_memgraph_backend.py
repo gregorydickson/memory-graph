@@ -299,12 +299,18 @@ class TestMemgraphBackendQueryExecution:
     @pytest.mark.asyncio
     async def test_execute_query_neo4j_error(self):
         """Test query execution with Neo4j error."""
-        from neo4j.exceptions import Neo4jError
+        from neo4j.exceptions import ClientError
 
         with patch('src.memorygraph.backends.memgraph_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_session = AsyncMock()
-            mock_session.execute_write = AsyncMock(side_effect=Neo4jError("Query error"))
+
+            # Use a function to raise the error to ensure proper async handling
+            async def raise_neo4j_error(*args, **kwargs):
+                # Use ClientError which is a concrete subclass of Neo4jError
+                raise ClientError("Query error")
+
+            mock_session.execute_write = AsyncMock(side_effect=raise_neo4j_error)
             mock_session.close = AsyncMock()
             mock_driver.session = Mock(return_value=mock_session)
             mock_driver.verify_connectivity = AsyncMock()
@@ -384,7 +390,7 @@ class TestMemgraphSchemaInitialization:
     @pytest.mark.asyncio
     async def test_initialize_schema_constraint_exists(self):
         """Test schema initialization when constraints already exist."""
-        from neo4j.exceptions import Neo4jError
+        from neo4j.exceptions import Neo4jError, ClientError
 
         with patch('src.memorygraph.backends.memgraph_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
@@ -395,7 +401,8 @@ class TestMemgraphSchemaInitialization:
             async def execute_write_side_effect(fn, *args):
                 call_count[0] += 1
                 if call_count[0] == 1:
-                    raise Neo4jError("Constraint already exists")
+                    # Use ClientError which is a concrete subclass of Neo4jError
+                    raise ClientError("Constraint already exists")
                 # Create a mock tx for successful calls
                 mock_tx = AsyncMock()
                 mock_result = AsyncMock()
@@ -419,14 +426,15 @@ class TestMemgraphSchemaInitialization:
     @pytest.mark.asyncio
     async def test_initialize_schema_not_supported(self):
         """Test schema initialization with unsupported features."""
-        from neo4j.exceptions import Neo4jError
+        from neo4j.exceptions import ClientError
 
         with patch('src.memorygraph.backends.memgraph_backend.AsyncGraphDatabase') as mock_db:
             mock_driver = AsyncMock()
             mock_session = AsyncMock()
 
-            def execute_write_side_effect(fn, *args):
-                raise Neo4jError("Feature not supported")
+            async def execute_write_side_effect(fn, *args):
+                # Use ClientError which is a concrete subclass of Neo4jError
+                raise ClientError("Feature not supported")
 
             mock_session.execute_write = AsyncMock(side_effect=execute_write_side_effect)
             mock_session.close = AsyncMock()
