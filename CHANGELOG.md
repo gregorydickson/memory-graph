@@ -13,6 +13,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced embedding support
 - Workflow automation templates
 
+## [0.11.14] - 2025-12-23
+
+### Added
+- **MemoryOperations Protocol** (`src/memorygraph/protocols.py`): Type-safe interface defining common operations all backends must support
+- **Tool Handler Registry** (`src/memorygraph/tools/registry.py`): Clean mapping of tool names to handlers, replacing if/elif chain
+- **Error Handling Decorator** (`src/memorygraph/tools/error_handling.py`): `@handle_tool_errors` decorator for consistent error handling across all tool handlers
+- **Input Validation** (`src/memorygraph/utils/validation.py`): Content size limits (50KB max), tag normalization with Pydantic field validators
+- **Datetime Utilities** (`src/memorygraph/utils/datetime_utils.py`): Centralized timezone-aware datetime handling
+- **Backend Capability Detection**: `is_cypher_capable()` method on all backends for runtime capability checking
+- **ADR-018**: Architecture Decision Record documenting CloudBackend type hierarchy refactoring
+
+### Changed
+- **CloudBackend Refactored**: Renamed internally to `CloudRESTAdapter` with backwards-compatible `CloudBackend` alias
+- **Tool Handlers Simplified**: All handlers now use `@handle_tool_errors` decorator, reducing boilerplate by ~40%
+- **Server Handler**: Uses tool registry for cleaner dispatch logic
+- **Datetime Handling**: All code now uses `datetime.now(timezone.utc)` instead of deprecated `datetime.utcnow()`
+
+### Fixed
+- **LSP Violation**: CloudBackend no longer violates Liskov Substitution Principle (documented in ADR-018)
+- **Timezone Safety**: Fixed naive vs aware datetime comparison issues in tests and production code
+- **SDK Model Sync**: SDK models now properly synchronized with server models
+
+### Testing
+- **Coverage Improved**: 70% → 81% (above 80% target)
+- **New Test Files**:
+  - `tests/test_cli_coverage.py` - CLI module (92% coverage)
+  - `tests/backends/test_factory_coverage.py` - Backend factory (99% coverage)
+  - `tests/tools/test_activity_tools_coverage.py` - Activity tools (98% coverage)
+  - `tests/tools/test_temporal_tools_coverage.py` - Temporal tools (96% coverage)
+  - `tests/tools/test_error_handling.py` - Error decorator (100% coverage)
+  - `tests/tools/test_registry.py` - Tool registry (100% coverage)
+  - `tests/tools/test_validation.py` - Input validation (100% coverage)
+  - `tests/analytics/test_advanced_queries_coverage.py` - Analytics (96% coverage)
+  - `tests/test_cloud_database_coverage.py` - Cloud database (100% coverage)
+  - `tests/test_sqlite_database_coverage.py` - SQLite database (85% coverage)
+- **Total Tests**: 1,578 passing, 49 skipped (neo4j optional dependency)
+
 ## [0.11.13] - 2025-12-23
 
 ### Changed
