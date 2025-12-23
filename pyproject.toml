@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "memorygraphMCP"
-version = "0.11.13"
+dynamic = ["version"]
 description = "Graph-based MCP memory server for AI coding agents with intelligent relationship tracking and multi-backend support"
 authors = [
     {name = "Gregory Dickson", email = "gregory.d.dickson@gmail.com"}
@@ -95,6 +95,9 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/memorygraph"]
+
+[tool.hatch.version]
+path = "src/memorygraph/__init__.py"
 
 [tool.black]
 line-length = 88
