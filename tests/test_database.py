@@ -10,12 +10,20 @@ Tests cover:
 - Async operations
 """
 
+import importlib.util
 import pytest
 import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from memorygraph.database import Neo4jConnection, MemoryDatabase
+
+# Check if neo4j is available
+neo4j_available = importlib.util.find_spec("neo4j") is not None
+neo4j_skip = pytest.mark.skipif(
+    not neo4j_available,
+    reason="neo4j package not installed"
+)
 from memorygraph.models import (
     Memory, MemoryType, MemoryContext, Relationship,
     RelationshipType, RelationshipProperties, SearchQuery,
@@ -122,6 +130,7 @@ class TestNeo4jConnection:
 
         assert "password must be provided" in str(exc_info.value)
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_connect_success(self, connection, mock_driver):
         """Test successful connection to Neo4j."""
@@ -134,6 +143,7 @@ class TestNeo4jConnection:
             assert connection.driver is not None
             mock_driver.verify_connectivity.assert_called_once()
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_connect_service_unavailable(self):
         """Test connection failure when service is unavailable."""
@@ -152,6 +162,7 @@ class TestNeo4jConnection:
 
             assert "Failed to connect" in str(exc_info.value)
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_connect_auth_error(self):
         """Test connection failure with authentication error."""
@@ -170,6 +181,7 @@ class TestNeo4jConnection:
 
             assert "Authentication failed" in str(exc_info.value)
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_connect_unexpected_error(self):
         """Test connection failure with unexpected error."""
@@ -268,6 +280,7 @@ class TestNeo4jConnection:
         assert len(result) == 1
         assert result[0]["name"] == "test"
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_execute_write_query_neo4j_error(self, connection, mock_driver, mock_session):
         """Test write query failure with Neo4jError."""
@@ -284,6 +297,7 @@ class TestNeo4jConnection:
 
         assert "Write query failed" in str(exc_info.value)
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_execute_read_query_neo4j_error(self, connection, mock_driver, mock_session):
         """Test read query failure with Neo4jError."""
@@ -419,7 +433,7 @@ class TestMemoryDatabase:
         with pytest.raises(DatabaseConnectionError) as exc_info:
             await database.store_memory(sample_memory)
 
-        assert "Failed to store memory" in str(exc_info.value)
+        assert "Write query failed" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_memory_existing(self, database, connection, sample_memory, mock_driver, mock_session):
@@ -673,6 +687,7 @@ class TestErrorHandling:
         conn = Neo4jConnection(uri="bolt://localhost:7687", user="neo4j", password="password")
         assert conn.driver is None
 
+    @neo4j_skip
     @pytest.mark.asyncio
     async def test_transaction_rollback(self, database, connection, mock_driver, mock_session):
         """Test that failed transactions rollback correctly."""

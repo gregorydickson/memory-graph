@@ -12,7 +12,7 @@ Provides sophisticated graph analytics:
 Phase 7 Implementation - Advanced Query & Analytics
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Any, Tuple
 import logging
 from collections import defaultdict
@@ -20,6 +20,7 @@ from collections import defaultdict
 from pydantic import BaseModel, Field, ConfigDict
 
 from ..backends.base import GraphBackend
+from ..utils.datetime_utils import parse_datetime
 from ..models import Memory, MemoryType, RelationshipType
 
 logger = logging.getLogger(__name__)
@@ -142,7 +143,7 @@ async def get_memory_graph_visualization(
         "edge_count": 0,
         "center_id": center_memory_id,
         "depth": depth,
-        "generated_at": datetime.now().isoformat(),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
     if center_memory_id:
@@ -592,7 +593,7 @@ async def identify_knowledge_gaps(
         results = await backend.execute_query(unsolved_query, params)
 
         for record in results:
-            age_days = (datetime.now() - datetime.fromisoformat(record["created_at"])).days
+            age_days = (datetime.now(timezone.utc) - parse_datetime(record["created_at"])).days
 
             # Severity based on age
             if age_days > 30:

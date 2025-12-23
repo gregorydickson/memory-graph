@@ -6,7 +6,7 @@ providing relevant context, problems, and patterns.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, Mock, patch
 
 from src.memorygraph.proactive.session_briefing import (
@@ -30,7 +30,7 @@ class TestSessionBriefingModels:
             memory_id="mem_123",
             memory_type="solution",
             title="Fixed auth bug",
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
         )
 
         assert activity.memory_id == "mem_123"
@@ -43,7 +43,7 @@ class TestSessionBriefingModels:
             problem_id="prob_456",
             title="Database timeout",
             description="Connection times out after 30s",
-            created_at=datetime.now(),
+            created_at=datetime.now(timezone.utc),
         )
 
         assert problem.problem_id == "prob_456"
@@ -92,7 +92,7 @@ class TestSessionBriefingFormatting:
                 memory_id=f"mem_{i}",
                 memory_type="solution",
                 title=f"Activity {i}",
-                timestamp=datetime.now() - timedelta(days=i),
+                timestamp=datetime.now(timezone.utc) - timedelta(days=i),
             ))
 
         text = briefing.format_as_text("minimal")
@@ -115,7 +115,7 @@ class TestSessionBriefingFormatting:
             problem_id="prob_1",
             title="Test Problem",
             description="This is a test problem",
-            created_at=datetime.now() - timedelta(days=5),
+            created_at=datetime.now(timezone.utc) - timedelta(days=5),
         ))
 
         text = briefing.format_as_text("standard")

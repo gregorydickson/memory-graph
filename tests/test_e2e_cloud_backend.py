@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
-from memorygraph.backends.cloud_backend import CloudBackend
+from memorygraph.backends.cloud_backend import CloudRESTAdapter
 from memorygraph.models import Memory, MemoryType
 
 
@@ -205,7 +205,7 @@ class MockHTTPClient:
 @pytest.fixture
 def mock_cloud_backend():
     """Create a mock cloud backend."""
-    backend = CloudBackend(
+    backend = CloudRESTAdapter(
         api_key="mg_test_key",
         api_url="https://test-api.memorygraph.dev"
     )
@@ -484,7 +484,7 @@ class TestE2ECloudBackend:
             'MEMORYGRAPH_API_KEY': 'mg_env_key',
             'MEMORYGRAPH_API_URL': 'https://custom-api.memorygraph.dev'
         }):
-            backend = CloudBackend()
+            backend = CloudRESTAdapter()
             assert backend.api_key == 'mg_env_key'
             assert backend.api_url == 'https://custom-api.memorygraph.dev'
 

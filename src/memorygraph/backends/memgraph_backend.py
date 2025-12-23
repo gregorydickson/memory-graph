@@ -299,6 +299,10 @@ class MemgraphBackend(GraphBackend):
         """Check if this backend supports ACID transactions."""
         return True
 
+    def is_cypher_capable(self) -> bool:
+        """Memgraph supports native Cypher query execution."""
+        return True
+
     @classmethod
     async def create(
         cls,

@@ -7,7 +7,7 @@ Provides a comprehensive migration system with validation, verification, and rol
 import logging
 import tempfile
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Callable
 
@@ -256,7 +256,7 @@ class MigrationManager:
             # Create temp export file
             temp_dir = Path(tempfile.gettempdir()) / "memorygraph_migration"
             temp_dir.mkdir(exist_ok=True, parents=True)
-            export_path = temp_dir / f"migration_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            export_path = temp_dir / f"migration_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
 
             # Use universal export (from Phase 1)
             progress_callback = self._report_progress if options.verbose else None
@@ -342,7 +342,7 @@ class MigrationManager:
         """
         from ..backends.sqlite_fallback import SQLiteFallbackBackend
         from ..backends.falkordblite_backend import FalkorDBLiteBackend
-        from ..backends.cloud_backend import CloudBackend
+        from ..backends.cloud_backend import CloudRESTAdapter
         from ..sqlite_database import SQLiteMemoryDatabase
         from ..cloud_database import CloudMemoryDatabase
 
@@ -351,7 +351,7 @@ class MigrationManager:
         # Use appropriate database wrapper for each backend type
         if isinstance(backend, (SQLiteFallbackBackend, FalkorDBLiteBackend)):
             db = SQLiteMemoryDatabase(backend)
-        elif isinstance(backend, CloudBackend):
+        elif isinstance(backend, CloudRESTAdapter):
             db = CloudMemoryDatabase(backend)
         else:
             db = MemoryDatabase(backend)

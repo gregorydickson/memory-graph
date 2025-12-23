@@ -123,15 +123,19 @@ class CircuitBreakerOpenError(CloudBackendError):
     pass
 
 
-class CloudBackend(GraphBackend):
+class CloudRESTAdapter(GraphBackend):
     """
-    Cloud backend that connects to MemoryGraph Cloud API.
+    Cloud REST adapter that connects to MemoryGraph Cloud API.
 
-    This backend enables:
+    This adapter enables:
     - Multi-device synchronization
     - Team collaboration and shared memories
     - Cloud-based storage with automatic backups
     - Usage tracking and analytics
+
+    Note: This adapter inherits from GraphBackend for compatibility but does NOT
+    support Cypher queries. It uses REST API calls instead. Use is_cypher_capable()
+    to check if a backend supports Cypher before calling execute_query().
 
     Configuration:
         MEMORYGRAPH_API_KEY: API key for authentication (required)
@@ -231,6 +235,7 @@ class CloudBackend(GraphBackend):
             AuthenticationError: If API key is invalid
             UsageLimitExceeded: If usage limits exceeded
             RateLimitExceeded: If rate limits exceeded
+            ValidationError: If payload is too large (HTTP 413)
             CircuitBreakerOpenError: If circuit breaker is open
             DatabaseConnectionError: For network or server errors
         """
@@ -266,6 +271,11 @@ class CloudBackend(GraphBackend):
             if response.status_code == 404:
                 # Raise consistent exception for not found
                 raise MemoryNotFoundError(f"Resource not found: {path}")
+
+            if response.status_code == 413:
+                raise ValidationError(
+                    "Payload too large. Please reduce the size of your content."
+                )
 
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
@@ -443,6 +453,16 @@ class CloudBackend(GraphBackend):
     def supports_transactions(self) -> bool:
         """Cloud backend handles transactions server-side."""
         return True
+
+    def is_cypher_capable(self) -> bool:
+        """
+        Returns False - cloud backend uses REST API, not Cypher.
+
+        Cloud backend communicates with the MemoryGraph Cloud API via REST endpoints.
+        It does not support raw Cypher query execution. Use the specific memory
+        operations instead (store_memory, search_memories, etc.).
+        """
+        return False
 
     # =========================================================================
     # Memory Operations
@@ -886,3 +906,8 @@ class CloudBackend(GraphBackend):
         except Exception as e:
             logger.error(f"Failed to parse memory from API response: {e}")
             return None
+
+
+# Backwards compatibility alias (deprecated)
+# Use CloudRESTAdapter instead
+CloudBackend = CloudRESTAdapter

@@ -193,6 +193,32 @@ except RateLimitError:
     print("Rate limit exceeded, please retry")
 ```
 
+## Model Synchronization
+
+The SDK models are kept in sync with the core memorygraph models. Key types:
+
+### MemoryType (13 types)
+task, code_pattern, problem, solution, project, technology, error, fix, command, file_context, workflow, general, conversation
+
+### RelationshipType (35 types)
+All relationship types from core are available in SDK, organized into categories:
+- **Causal**: CAUSES, TRIGGERS, LEADS_TO, PREVENTS, BREAKS
+- **Solution**: SOLVES, ADDRESSES, ALTERNATIVE_TO, IMPROVES, REPLACES
+- **Context**: OCCURS_IN, APPLIES_TO, WORKS_WITH, REQUIRES, USED_IN
+- **Learning**: BUILDS_ON, CONTRADICTS, CONFIRMS, GENERALIZES, SPECIALIZES
+- **Similarity**: SIMILAR_TO, VARIANT_OF, RELATED_TO, ANALOGY_TO, OPPOSITE_OF
+- **Workflow**: FOLLOWS, DEPENDS_ON, ENABLES, BLOCKS, PARALLEL_TO
+- **Quality**: EFFECTIVE_FOR, INEFFECTIVE_FOR, PREFERRED_OVER, DEPRECATED_BY, VALIDATED_BY
+
+### Bi-temporal Fields
+The SDK Relationship model includes optional bi-temporal tracking fields:
+- `valid_from`: When the relationship became valid
+- `valid_until`: When the relationship expires
+- `recorded_at`: When the relationship was recorded
+- `invalidated_by`: ID of memory that invalidated this relationship
+
+See `tests/test_model_sync.py` for automated sync verification.
+
 ## Documentation
 
 - [API Reference](docs/api.md) - Complete API documentation

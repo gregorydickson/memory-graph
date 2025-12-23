@@ -9,7 +9,7 @@ Automatically captures development context from Claude Code sessions including:
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -134,8 +134,8 @@ async def capture_task_context(
             "files": files or [],
             "start_time": task_context.start_time.isoformat(),
         },
-        "created_at": datetime.now(),
-        "updated_at": datetime.now(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
     # Add project relationship if provided
@@ -163,7 +163,7 @@ async def capture_task_context(
                 memory_id,
                 file_id,
                 "INVOLVES",
-                {"created_at": datetime.now(), "strength": 1.0},
+                {"created_at": datetime.now(timezone.utc), "strength": 1.0},
             )
 
     # Link to project if provided
@@ -172,7 +172,7 @@ async def capture_task_context(
             memory_id,
             project_id,
             "PART_OF",
-            {"created_at": datetime.now(), "strength": 1.0},
+            {"created_at": datetime.now(timezone.utc), "strength": 1.0},
         )
 
     return memory_id
@@ -234,8 +234,8 @@ async def capture_command_execution(
             "has_error": bool(error),
             "timestamp": cmd_exec.timestamp.isoformat(),
         },
-        "created_at": datetime.now(),
-        "updated_at": datetime.now(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
     if task_id:
@@ -249,7 +249,7 @@ async def capture_command_execution(
             memory_id,
             task_id,
             "EXECUTED_IN",
-            {"created_at": datetime.now(), "strength": 1.0},
+            {"created_at": datetime.now(timezone.utc), "strength": 1.0},
         )
 
     # Extract and link errors if present
@@ -260,7 +260,7 @@ async def capture_command_execution(
                 memory_id,
                 pattern_id,
                 "EXHIBITS",
-                {"created_at": datetime.now(), "strength": 0.9},
+                {"created_at": datetime.now(timezone.utc), "strength": 0.9},
             )
 
     return memory_id
@@ -336,8 +336,8 @@ async def analyze_error_patterns(backend: GraphBackend, error: str) -> list[str]
                 "solutions_tried": [],
                 "successful_solutions": [],
             },
-            "created_at": datetime.now(),
-            "updated_at": datetime.now(),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
         }
 
         pattern_id = await backend.store_node("Memory", properties)
@@ -376,7 +376,7 @@ async def track_solution_effectiveness(
     rel_type = "SOLVES" if success else "ATTEMPTED_SOLUTION"
 
     properties = {
-        "created_at": datetime.now(),
+        "created_at": datetime.now(timezone.utc),
         "success": success,
         "strength": 1.0 if success else 0.3,
         "confidence": 0.9 if success else 0.5,

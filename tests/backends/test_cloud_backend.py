@@ -16,7 +16,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 from memorygraph.backends.cloud_backend import (
-    CloudBackend,
+    CloudRESTAdapter,
     CloudBackendError,
     AuthenticationError,
     UsageLimitExceeded,
@@ -44,7 +44,7 @@ def api_url():
 @pytest.fixture
 def backend(api_key, api_url):
     """Create a test cloud backend."""
-    return CloudBackend(api_key=api_key, api_url=api_url, timeout=10)
+    return CloudRESTAdapter(api_key=api_key, api_url=api_url, timeout=10)
 
 
 @pytest.fixture
@@ -83,21 +83,21 @@ def mock_response():
     return _create_response
 
 
-class TestCloudBackendInitialization:
-    """Test CloudBackend initialization."""
+class TestCloudRESTAdapterInitialization:
+    """Test CloudRESTAdapter initialization."""
 
     def test_initialization_with_api_key(self, api_key, api_url):
         """Test initialization with explicit API key."""
-        backend = CloudBackend(api_key=api_key, api_url=api_url)
+        backend = CloudRESTAdapter(api_key=api_key, api_url=api_url)
         assert backend.api_key == api_key
         assert backend.api_url == api_url
-        assert backend.timeout == CloudBackend.DEFAULT_TIMEOUT
+        assert backend.timeout == CloudRESTAdapter.DEFAULT_TIMEOUT
 
     def test_initialization_without_api_key_raises(self):
         """Test that missing API key raises error."""
         with patch.dict('os.environ', {}, clear=True):
             with pytest.raises(DatabaseConnectionError) as exc_info:
-                CloudBackend()
+                CloudRESTAdapter()
             assert "MEMORYGRAPH_API_KEY is required" in str(exc_info.value)
 
     def test_initialization_with_env_vars(self, api_key, api_url):
@@ -107,7 +107,7 @@ class TestCloudBackendInitialization:
             'MEMORYGRAPH_API_URL': api_url,
             'MEMORYGRAPH_TIMEOUT': '60'
         }):
-            backend = CloudBackend()
+            backend = CloudRESTAdapter()
             assert backend.api_key == api_key
             assert backend.api_url == api_url
             assert backend.timeout == 60
@@ -115,17 +115,17 @@ class TestCloudBackendInitialization:
     def test_api_key_warning_for_invalid_prefix(self, api_url, caplog):
         """Test warning for API key without mg_ prefix."""
         with patch.dict('os.environ', {}, clear=True):
-            backend = CloudBackend(api_key="invalid_key", api_url=api_url)
+            backend = CloudRESTAdapter(api_key="invalid_key", api_url=api_url)
             assert "does not start with 'mg_'" in caplog.text
 
     def test_default_api_url(self, api_key):
         """Test default API URL is used when not provided."""
         with patch.dict('os.environ', {'MEMORYGRAPH_API_KEY': api_key}, clear=True):
-            backend = CloudBackend(api_key=api_key)
-            assert backend.api_url == CloudBackend.DEFAULT_API_URL
+            backend = CloudRESTAdapter(api_key=api_key)
+            assert backend.api_url == CloudRESTAdapter.DEFAULT_API_URL
 
 
-class TestCloudBackendConnection:
+class TestCloudRESTAdapterConnection:
     """Test connection management."""
 
     @pytest.mark.asyncio
@@ -196,7 +196,7 @@ class TestCloudBackendConnection:
             assert "error" in result
 
 
-class TestCloudBackendMemoryOperations:
+class TestCloudRESTAdapterMemoryOperations:
     """Test memory CRUD operations."""
 
     @pytest.mark.asyncio
@@ -282,7 +282,7 @@ class TestCloudBackendMemoryOperations:
             mock_request.assert_called_once_with("DELETE", "/memories/mem_12345")
 
 
-class TestCloudBackendRelationshipOperations:
+class TestCloudRESTAdapterRelationshipOperations:
     """Test relationship operations."""
 
     @pytest.mark.asyncio
@@ -346,7 +346,7 @@ class TestCloudBackendRelationshipOperations:
             assert relationship.type == RelationshipType.SOLVES
 
 
-class TestCloudBackendSearchOperations:
+class TestCloudRESTAdapterSearchOperations:
     """Test search operations."""
 
     @pytest.mark.asyncio
@@ -453,7 +453,7 @@ class TestCloudBackendSearchOperations:
             assert result["total_relationships"] == 50
 
 
-class TestCloudBackendErrorHandling:
+class TestCloudRESTAdapterErrorHandling:
     """Test error handling."""
 
     @pytest.mark.asyncio
@@ -559,7 +559,7 @@ class TestCloudBackendErrorHandling:
             assert "Cannot connect" in str(exc_info.value)
 
 
-class TestCloudBackendInterface:
+class TestCloudRESTAdapterInterface:
     """Test GraphBackend interface compliance."""
 
     def test_backend_name(self, backend):
@@ -587,7 +587,7 @@ class TestCloudBackendInterface:
         await backend.initialize_schema()
 
 
-class TestCloudBackendPayloadConversion:
+class TestCloudRESTAdapterPayloadConversion:
     """Test payload conversion methods."""
 
     def test_memory_to_api_payload(self, backend, sample_memory):

@@ -119,6 +119,24 @@ class GraphBackend(ABC):
         """
         pass
 
+    @abstractmethod
+    def is_cypher_capable(self) -> bool:
+        """
+        Check if this backend supports Cypher query execution.
+
+        Returns:
+            True if execute_query() can be used for Cypher queries.
+            False if backend uses a different query mechanism (e.g., REST API).
+
+        Example:
+            if backend.is_cypher_capable():
+                results = await backend.execute_query("MATCH (m:Memory) RETURN m")
+            else:
+                # Use specific memory operations instead
+                results = await backend.search_memories(query)
+        """
+        pass
+
     async def __aenter__(self):
         """Async context manager entry."""
         await self.connect()

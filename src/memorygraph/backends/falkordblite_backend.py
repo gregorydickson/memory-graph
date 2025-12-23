@@ -655,6 +655,10 @@ class FalkorDBLiteBackend(GraphBackend):
         """Check if this backend supports ACID transactions."""
         return True
 
+    def is_cypher_capable(self) -> bool:
+        """FalkorDBLite supports native Cypher query execution."""
+        return True
+
     def _falkordblite_to_memory(self, node_data: Dict[str, Any]) -> Optional[Memory]:
         """
         Convert FalkorDBLite node data to Memory object.

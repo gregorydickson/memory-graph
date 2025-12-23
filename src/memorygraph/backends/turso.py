@@ -402,6 +402,10 @@ class TursoBackend(GraphBackend):
         """Turso supports ACID transactions."""
         return True
 
+    def is_cypher_capable(self) -> bool:
+        """Turso supports Cypher-like query execution."""
+        return True
+
     # Helper methods (same as SQLite backend)
 
     async def _load_graph_to_memory(self) -> None:

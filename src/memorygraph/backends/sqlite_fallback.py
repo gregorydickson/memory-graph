@@ -404,6 +404,10 @@ class SQLiteFallbackBackend(GraphBackend):
         """Check if this backend supports ACID transactions."""
         return True  # SQLite supports transactions
 
+    def is_cypher_capable(self) -> bool:
+        """SQLite fallback supports Cypher-like query execution."""
+        return True
+
     @classmethod
     async def create(cls, db_path: Optional[str] = None) -> "SQLiteFallbackBackend":
         """

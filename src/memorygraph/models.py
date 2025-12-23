@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 class MemoryType(str, Enum):
     """Types of memories that can be stored in the system."""
-    
+
     TASK = "task"
     CODE_PATTERN = "code_pattern"
     PROBLEM = "problem"
@@ -26,6 +26,7 @@ class MemoryType(str, Enum):
     FILE_CONTEXT = "file_context"
     WORKFLOW = "workflow"
     GENERAL = "general"
+    CONVERSATION = "conversation"
 
 
 class RelationshipType(str, Enum):
@@ -488,6 +489,21 @@ class SearchQuery(BaseModel):
     search_tolerance: Optional[str] = Field(default="normal")
     match_mode: Optional[str] = Field(default="any", description="Match mode for terms: 'any' (OR) or 'all' (AND)")
     relationship_filter: Optional[List[str]] = Field(default=None, description="Filter results by relationship types")
+
+    @field_validator('tags', mode='before')
+    @classmethod
+    def validate_tags(cls, v):
+        """Ensure tags are lowercase and non-empty.
+
+        Args:
+            v: List of tag strings to validate
+
+        Returns:
+            List of cleaned, lowercase, non-empty tags
+        """
+        if v is None:
+            return []
+        return [tag.lower().strip() for tag in v if tag and tag.strip()]
 
     @field_validator('search_tolerance')
     @classmethod

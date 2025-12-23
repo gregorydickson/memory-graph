@@ -126,6 +126,18 @@ def test_tag_validation():
     assert memory.tags == ["uppercase", "lowercase", "mixedcase"]
 
 
+def test_search_query_tag_normalization():
+    """Test that SearchQuery normalizes tags to lowercase."""
+    query = SearchQuery(tags=["UPPERCASE", "MixedCase", "lowercase"])
+    assert query.tags == ["uppercase", "mixedcase", "lowercase"]
+
+
+def test_search_query_tag_strips_whitespace():
+    """Test that SearchQuery strips whitespace from tags."""
+    query = SearchQuery(tags=["  spaced  ", "normal"])
+    assert query.tags == ["spaced", "normal"]
+
+
 def test_memory_validation():
     """Test memory field validation."""
     # Test empty title
@@ -135,7 +147,7 @@ def test_memory_validation():
             title="",
             content="Content"
         )
-    
+
     # Test empty content
     with pytest.raises(ValueError):
         Memory(
@@ -143,7 +155,7 @@ def test_memory_validation():
             title="Title",
             content=""
         )
-    
+
     # Test invalid importance range
     with pytest.raises(ValueError):
         Memory(

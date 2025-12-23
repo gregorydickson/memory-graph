@@ -59,6 +59,11 @@ class RelationshipType(str, Enum):
     ENABLES = "ENABLES"
     BLOCKS = "BLOCKS"
     PARALLEL_TO = "PARALLEL_TO"
+    EFFECTIVE_FOR = "EFFECTIVE_FOR"
+    INEFFECTIVE_FOR = "INEFFECTIVE_FOR"
+    PREFERRED_OVER = "PREFERRED_OVER"
+    DEPRECATED_BY = "DEPRECATED_BY"
+    VALIDATED_BY = "VALIDATED_BY"
 
 
 class Memory(BaseModel):
@@ -113,6 +118,12 @@ class Relationship(BaseModel):
     confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     context: str | None = None
     created_at: datetime
+
+    # Bi-temporal tracking fields (optional)
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+    recorded_at: datetime | None = None
+    invalidated_by: str | None = None
 
 
 class RelationshipCreate(BaseModel):

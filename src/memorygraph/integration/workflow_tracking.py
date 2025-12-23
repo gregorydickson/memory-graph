@@ -8,7 +8,7 @@ Tracks development workflows and provides intelligent suggestions:
 - Workflow optimization recommendations
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -121,8 +121,8 @@ async def track_workflow(
             "duration_seconds": duration_seconds,
             "timestamp": action.timestamp.isoformat(),
         },
-        "created_at": datetime.now(),
-        "updated_at": datetime.now(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
     memory_id = await backend.store_node("Memory", properties)
@@ -144,7 +144,7 @@ async def track_workflow(
             memory_id,
             session_id,
             "IN_SESSION",
-            {"created_at": datetime.now(), "strength": 1.0},
+            {"created_at": datetime.now(timezone.utc), "strength": 1.0},
         )
 
         # Link to previous action (workflow sequence)
@@ -165,7 +165,7 @@ async def track_workflow(
                 memory_id,
                 prev_id,
                 "FOLLOWS",
-                {"created_at": datetime.now(), "strength": 0.8},
+                {"created_at": datetime.now(timezone.utc), "strength": 0.8},
             )
 
     return memory_id
@@ -481,8 +481,8 @@ async def get_session_state(
 
     state = SessionState(
         session_id=session_id,
-        start_time=session.get("start_time", datetime.now()),
-        last_activity=session.get("last_activity", datetime.now()),
+        start_time=session.get("start_time", datetime.now(timezone.utc)),
+        last_activity=session.get("last_activity", datetime.now(timezone.utc)),
         current_task=session.get("current_task"),
         open_problems=open_problems,
         next_steps=next_steps,

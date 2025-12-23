@@ -1,7 +1,7 @@
 """
 Cloud-specific database implementation for MemoryGraph.
 
-This module provides a CloudMemoryDatabase class that wraps the CloudBackend
+This module provides a CloudMemoryDatabase class that wraps the CloudRESTAdapter
 to provide the same interface as MemoryDatabase for tool handlers.
 """
 
@@ -16,7 +16,7 @@ from .models import (
     MemoryError, MemoryNotFoundError, RelationshipError,
     ValidationError, DatabaseConnectionError, SchemaError, PaginatedResult
 )
-from .backends.cloud_backend import CloudBackend
+from .backends.cloud_backend import CloudRESTAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -24,16 +24,16 @@ logger = logging.getLogger(__name__)
 class CloudMemoryDatabase:
     """Cloud-specific implementation of memory database operations.
 
-    This class wraps CloudBackend to provide the same interface expected by
-    the MCP tool handlers, delegating to the CloudBackend's REST API methods.
+    This class wraps CloudRESTAdapter to provide the same interface expected by
+    the MCP tool handlers, delegating to the CloudRESTAdapter's REST API methods.
     """
 
-    def __init__(self, backend: CloudBackend) -> None:
+    def __init__(self, backend: CloudRESTAdapter) -> None:
         """
         Initialize with a Cloud backend connection.
 
         Args:
-            backend: CloudBackend instance
+            backend: CloudRESTAdapter instance
         """
         self.backend = backend
 
@@ -117,7 +117,7 @@ class CloudMemoryDatabase:
         Raises:
             DatabaseConnectionError: If search fails
         """
-        # CloudBackend's search_memories already handles pagination via limit/offset
+        # CloudRESTAdapter's search_memories already handles pagination via limit/offset
         memories = await self.backend.search_memories(search_query)
 
         # Cloud API doesn't return total count - use -1 to indicate unknown

@@ -11,7 +11,7 @@ Provides automatic briefing when Claude Code starts, including:
 Phase 7 Implementation - Session Start Intelligence
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 import logging
@@ -119,7 +119,7 @@ class SessionBriefing(BaseModel):
             lines.append("## Recent Activity")
             count = 5 if verbosity == "minimal" else (10 if verbosity == "standard" else len(self.recent_activities))
             for activity in self.recent_activities[:count]:
-                age = (datetime.now() - activity.timestamp).days
+                age = (datetime.now(timezone.utc) - activity.timestamp).days
                 age_str = f"{age}d ago" if age > 0 else "today"
                 lines.append(f"- [{activity.memory_type}] {activity.title} ({age_str})")
                 if verbosity == "detailed" and activity.summary:
@@ -130,7 +130,7 @@ class SessionBriefing(BaseModel):
         if self.unresolved_problems:
             lines.append("## Active Issues ⚠️")
             for problem in self.unresolved_problems:
-                age = (datetime.now() - problem.created_at).days
+                age = (datetime.now(timezone.utc) - problem.created_at).days
                 lines.append(f"- {problem.title} ({age}d old)")
                 if verbosity in ["standard", "detailed"]:
                     lines.append(f"  {problem.description[:200]}...")
@@ -227,7 +227,7 @@ async def generate_session_briefing(
         logger.error(f"Error counting memories: {e}")
 
     # Get recent activities
-    cutoff_date = datetime.now() - timedelta(days=recency_days)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=recency_days)
 
     recent_query = """
     MATCH (m:Memory)

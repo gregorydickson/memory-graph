@@ -238,5 +238,9 @@ class LadybugDBBackend(GraphBackend):
         # LadybugDB likely supports transactions
         return True
 
+    def is_cypher_capable(self) -> bool:
+        """LadybugDB supports native Cypher query execution."""
+        return True
+
     # Additional methods would be implemented here following the GraphBackend interface
     # For brevity, only the core methods are shown

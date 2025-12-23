@@ -7,7 +7,7 @@ graph database backend based on environment configuration and availability.
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 from .base import GraphBackend
 from ..models import DatabaseConnectionError
@@ -28,20 +28,26 @@ class BackendFactory:
     """
 
     @staticmethod
-    async def create_backend() -> GraphBackend:
+    async def create_backend() -> Union[GraphBackend, "CloudRESTAdapter"]:
         """
         Create and connect to the best available backend.
 
         Returns:
-            Connected GraphBackend instance
+            Connected GraphBackend or CloudRESTAdapter instance
 
         Raises:
             DatabaseConnectionError: If no backend can be connected
 
         Selection logic:
         - Default: SQLite (zero-config, no external dependencies)
-        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, falkordb, falkordblite, sqlite, ladybugdb, auto)
+        - Explicit: Use MEMORY_BACKEND env var if set (neo4j, memgraph, falkordb, falkordblite, sqlite, ladybugdb, cloud, auto)
         - Auto: Try backends in order until one connects successfully
+
+        Schema Initialization:
+        - SQLite/Turso: Schema auto-initialized by factory (safe for first-time use)
+        - Neo4j/Memgraph/FalkorDB/FalkorDBLite/LadybugDB: Schema must be created externally before use
+        - Cloud: Schema managed by cloud service (no local initialization needed)
+        - All initialize_schema() methods are idempotent (safe to call multiple times)
         """
         backend_type = os.getenv("MEMORY_BACKEND", "sqlite").lower()
 
@@ -159,6 +165,7 @@ class BackendFactory:
 
         backend = Neo4jBackend(uri=uri, user=user, password=password)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -181,6 +188,7 @@ class BackendFactory:
 
         backend = MemgraphBackend(uri=uri, user=user, password=password)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -204,6 +212,7 @@ class BackendFactory:
 
         backend = FalkorDBBackend(host=host, port=port, password=password)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -224,6 +233,7 @@ class BackendFactory:
 
         backend = FalkorDBLiteBackend(db_path=db_path)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -244,6 +254,8 @@ class BackendFactory:
 
         backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
+        # NOTE: Unlike SQLite/Turso, LadybugDB schema is not auto-initialized
         return backend
 
     @staticmethod
@@ -263,6 +275,7 @@ class BackendFactory:
         db_path = os.getenv("MEMORY_SQLITE_PATH")
         backend = SQLiteFallbackBackend(db_path=db_path)
         await backend.connect()
+        # Schema auto-initialized - safe for first-time users
         await backend.initialize_schema()
         return backend
 
@@ -290,22 +303,23 @@ class BackendFactory:
             auth_token=auth_token
         )
         await backend.connect()
+        # Schema auto-initialized - safe for first-time users
         await backend.initialize_schema()
         return backend
 
     @staticmethod
-    async def _create_cloud() -> GraphBackend:
+    async def _create_cloud() -> "CloudRESTAdapter":
         """
         Create and connect to MemoryGraph Cloud backend.
 
         Returns:
-            Connected CloudBackend instance
+            Connected CloudRESTAdapter instance
 
         Raises:
             DatabaseConnectionError: If connection fails or API key not configured
         """
         # Lazy import - only load cloud backend when needed
-        from .cloud_backend import CloudBackend
+        from .cloud_backend import CloudRESTAdapter
 
         api_key = os.getenv("MEMORYGRAPH_API_KEY")
         api_url = os.getenv("MEMORYGRAPH_API_URL")
@@ -318,16 +332,17 @@ class BackendFactory:
                 "Get your API key at https://app.memorygraph.dev"
             )
 
-        backend = CloudBackend(
+        backend = CloudRESTAdapter(
             api_key=api_key,
             api_url=api_url,
             timeout=timeout
         )
         await backend.connect()
+        # Schema managed by cloud service - no local initialization needed
         return backend
 
     @staticmethod
-    async def create_from_config(config: 'BackendConfig') -> GraphBackend:
+    async def create_from_config(config: 'BackendConfig') -> Union[GraphBackend, "CloudRESTAdapter"]:
         """
         Create backend from explicit configuration without using environment variables.
 
@@ -427,6 +442,7 @@ class BackendFactory:
 
         backend = SQLiteFallbackBackend(db_path=db_path)
         await backend.connect()
+        # Schema auto-initialized - safe for first-time users
         await backend.initialize_schema()
         return backend
 
@@ -437,6 +453,7 @@ class BackendFactory:
 
         backend = FalkorDBLiteBackend(db_path=db_path)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -446,6 +463,7 @@ class BackendFactory:
 
         backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -462,6 +480,7 @@ class BackendFactory:
 
         backend = Neo4jBackend(uri=uri, user=user, password=password)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -475,6 +494,7 @@ class BackendFactory:
 
         backend = MemgraphBackend(uri=uri, user=user, password=password)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -488,6 +508,7 @@ class BackendFactory:
 
         backend = FalkorDBBackend(host=host, port=port, password=password)
         await backend.connect()
+        # Schema managed externally - assumes database is already configured
         return backend
 
     @staticmethod
@@ -505,6 +526,7 @@ class BackendFactory:
             auth_token=auth_token
         )
         await backend.connect()
+        # Schema auto-initialized - safe for first-time users
         await backend.initialize_schema()
         return backend
 
@@ -513,19 +535,20 @@ class BackendFactory:
         api_key: Optional[str] = None,
         api_url: Optional[str] = None,
         timeout: Optional[int] = None
-    ) -> GraphBackend:
+    ) -> "CloudRESTAdapter":
         """Create Cloud backend with explicit config (thread-safe)."""
-        from .cloud_backend import CloudBackend
+        from .cloud_backend import CloudRESTAdapter
 
         if not api_key:
             raise DatabaseConnectionError("MEMORYGRAPH_API_KEY is required for cloud backend")
 
-        backend = CloudBackend(
+        backend = CloudRESTAdapter(
             api_key=api_key,
             api_url=api_url,
             timeout=timeout
         )
         await backend.connect()
+        # Schema managed by cloud service - no local initialization needed
         return backend
 
     @staticmethod

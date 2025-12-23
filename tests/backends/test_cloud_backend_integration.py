@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 from memorygraph.backends.cloud_backend import (
-    CloudBackend,
+    CloudRESTAdapter,
     AuthenticationError,
     UsageLimitExceeded,
 )
@@ -36,7 +36,7 @@ def api_url():
 @pytest.fixture
 def backend(api_key, api_url):
     """Create a cloud backend for integration testing."""
-    return CloudBackend(api_key=api_key, api_url=api_url, timeout=30)
+    return CloudRESTAdapter(api_key=api_key, api_url=api_url, timeout=30)
 
 
 class MockHTTPClient:
@@ -221,7 +221,7 @@ class MockHTTPClient:
         return False
 
 
-class TestCloudBackendIntegration:
+class TestCloudRESTAdapterIntegration:
     """Integration tests for cloud backend with full workflows."""
 
     @pytest.mark.asyncio

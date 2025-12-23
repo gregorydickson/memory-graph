@@ -13,7 +13,7 @@ import os
 import re
 import subprocess
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
@@ -257,8 +257,8 @@ async def detect_project(backend: GraphBackend, directory: str) -> Optional[Proj
             "project_type": project_type,
             "git_remote": git_remote,
             "technologies": technologies,
-            "created_at": datetime.now(),
-            "updated_at": datetime.now(),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
         }
         await backend.store_node("Entity", properties)
 
@@ -441,8 +441,8 @@ async def track_file_changes(
                     "lines_removed": lines_removed,
                     "project_id": project_id,
                 },
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
             }
 
             memory_id = await backend.store_node("Memory", properties)
@@ -452,7 +452,7 @@ async def track_file_changes(
                 memory_id,
                 project_id,
                 "PART_OF",
-                {"created_at": datetime.now(), "strength": 1.0},
+                {"created_at": datetime.now(timezone.utc), "strength": 1.0},
             )
 
             # Create or get file entity and link
@@ -471,7 +471,7 @@ async def track_file_changes(
                     memory_id,
                     file_id,
                     "MODIFIES" if change_type == "modified" else "CREATES",
-                    {"created_at": datetime.now(), "strength": 1.0},
+                    {"created_at": datetime.now(timezone.utc), "strength": 1.0},
                 )
 
     except Exception as e:
@@ -564,8 +564,8 @@ async def identify_code_patterns(
                     "confidence": pattern.confidence,
                     "project_id": project_id,
                 },
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
             }
 
             memory_id = await backend.store_node("Memory", properties)
@@ -575,7 +575,7 @@ async def identify_code_patterns(
                 memory_id,
                 project_id,
                 "FOUND_IN",
-                {"created_at": datetime.now(), "strength": pattern.confidence},
+                {"created_at": datetime.now(timezone.utc), "strength": pattern.confidence},
             )
 
             patterns.append(pattern)

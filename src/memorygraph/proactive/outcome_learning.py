@@ -10,7 +10,7 @@ Tracks solution effectiveness and learns from outcomes:
 Phase 7 Implementation - Learning From Outcomes
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import logging
 import math
@@ -91,7 +91,7 @@ async def record_outcome(
     logger.info(f"Recording outcome for memory {memory_id}: success={success}")
 
     # Create outcome node and link to memory
-    outcome_id = f"outcome_{datetime.now().timestamp()}"
+    outcome_id = f"outcome_{datetime.now(timezone.utc).timestamp()}"
 
     create_outcome_query = """
     MATCH (m:Memory {id: $memory_id})
@@ -117,7 +117,7 @@ async def record_outcome(
                 "success": success,
                 "description": outcome_description,
                 "context": str(context) if context else None,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "impact": impact,
             }
         )
@@ -210,7 +210,7 @@ async def _update_memory_effectiveness(
                 "effectiveness": new_effectiveness,
                 "confidence": confidence,
                 "usage_count": usage_count,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -331,7 +331,7 @@ async def update_pattern_effectiveness(
                 "pattern_id": pattern_id,
                 "effectiveness": new_effectiveness,
                 "confidence": new_confidence,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         )
 
@@ -388,7 +388,7 @@ async def calculate_effectiveness_score(
             failed_uses=record.get("failed_outcomes", 0),
             effectiveness=record.get("effectiveness", 0.5),
             confidence=record.get("confidence", 0.5),
-            last_updated=datetime.now(),
+            last_updated=datetime.now(timezone.utc),
         )
 
     except Exception as e:

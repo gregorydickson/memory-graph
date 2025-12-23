@@ -29,7 +29,7 @@ from .database import MemoryDatabase
 from .sqlite_database import SQLiteMemoryDatabase
 from .cloud_database import CloudMemoryDatabase
 from .backends.sqlite_fallback import SQLiteFallbackBackend
-from .backends.cloud_backend import CloudBackend
+from .backends.cloud_backend import CloudRESTAdapter
 from .models import (
     Memory,
     MemoryType,
@@ -47,22 +47,7 @@ from .advanced_tools import ADVANCED_RELATIONSHIP_TOOLS, AdvancedRelationshipHan
 from .migration_tools_module import MIGRATION_TOOLS, MIGRATION_TOOL_HANDLERS
 # Removed: intelligence_tools, integration_tools, proactive_tools (moved to experimental/)
 from .config import Config
-from .tools import (
-    handle_store_memory,
-    handle_get_memory,
-    handle_update_memory,
-    handle_delete_memory,
-    handle_create_relationship,
-    handle_get_related_memories,
-    handle_search_memories,
-    handle_recall_memories,
-    handle_contextual_search,
-    handle_get_memory_statistics,
-    handle_get_recent_activity,
-    handle_search_relationships_by_context,
-    # Temporal handlers deferred (backend methods available via Python API):
-    # handle_query_as_of, handle_get_relationship_history, handle_what_changed
-)
+from .tools.registry import get_handler
 
 
 # Configure logging
@@ -165,6 +150,11 @@ FALLBACK: If recall returns no relevant results, try search_memories with tags f
 
 Required: type, title, content. Optional: tags, importance (0-1), context.
 
+LIMITS:
+- title: max 500 characters
+- content: max 50KB (50,000 characters)
+- tags: max 50 tags, 100 chars each
+
 TAGGING BEST PRACTICE:
 - Always include acronyms AS TAGS (e.g., tags=["jwt", "auth"])
 - Fuzzy search struggles with acronyms in content
@@ -255,6 +245,8 @@ PARAMETERS:
 - min_importance: Filter by importance threshold
 - search_tolerance: strict/normal/fuzzy
 - match_mode: any/all for multiple terms
+
+NOTE: Tags are automatically normalized to lowercase for case-insensitive matching.
 
 EXAMPLES:
 - search_memories(tags=["jwt", "auth"]) - find JWT-related memories
@@ -601,32 +593,10 @@ RETURNS:
                         isError=True
                     )
 
-                if name == "recall_memories":
-                    return await handle_recall_memories(self.memory_db, arguments)
-                elif name == "store_memory":
-                    return await handle_store_memory(self.memory_db, arguments)
-                elif name == "get_memory":
-                    return await handle_get_memory(self.memory_db, arguments)
-                elif name == "search_memories":
-                    return await handle_search_memories(self.memory_db, arguments)
-                elif name == "update_memory":
-                    return await handle_update_memory(self.memory_db, arguments)
-                elif name == "delete_memory":
-                    return await handle_delete_memory(self.memory_db, arguments)
-                elif name == "create_relationship":
-                    return await handle_create_relationship(self.memory_db, arguments)
-                elif name == "get_related_memories":
-                    return await handle_get_related_memories(self.memory_db, arguments)
-                elif name == "get_memory_statistics":
-                    return await handle_get_memory_statistics(self.memory_db, arguments)
-                elif name == "get_recent_activity":
-                    return await handle_get_recent_activity(self.memory_db, arguments)
-                elif name == "search_relationships_by_context":
-                    return await handle_search_relationships_by_context(self.memory_db, arguments)
-                # Contextual search tool
-                elif name == "contextual_search":
-                    return await handle_contextual_search(self.memory_db, arguments)
-                # Temporal tools deferred (backend methods available via Python API)
+                # Check core tool handlers first using registry
+                handler = get_handler(name)
+                if handler:
+                    return await handler(self.memory_db, arguments)
                 # Advanced relationship tools
                 elif name in ["find_memory_path", "analyze_memory_clusters", "find_bridge_memories",
                                        "suggest_relationship_type", "reinforce_relationship",
@@ -693,7 +663,7 @@ RETURNS:
             if isinstance(self.db_connection, SQLiteFallbackBackend):
                 logger.info("Using SQLiteMemoryDatabase for SQLite backend")
                 self.memory_db = SQLiteMemoryDatabase(self.db_connection)
-            elif isinstance(self.db_connection, CloudBackend):
+            elif isinstance(self.db_connection, CloudRESTAdapter):
                 logger.info("Using CloudMemoryDatabase for Cloud backend")
                 self.memory_db = CloudMemoryDatabase(self.db_connection)
             else:
