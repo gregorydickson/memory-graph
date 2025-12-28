@@ -214,6 +214,8 @@ class Neo4jConnection:
 class MemoryDatabase:
     """High-level interface for memory database operations."""
 
+    LADYBUG = "ladybugdb"
+
     def __init__(self, connection):
         """
         Initialize with a database backend connection.
@@ -223,6 +225,12 @@ class MemoryDatabase:
                        Must provide execute_write_query and execute_read_query methods.
         """
         self.connection = connection
+        self._backend = None
+        backend_name_attr = getattr(connection, "backend_name", lambda: "unknown")
+        if callable(backend_name_attr):
+            self._backend = backend_name_attr()
+        else:
+            self._backend = backend_name_attr
 
     async def initialize_schema(self) -> None:
         """Create database schema, constraints, and indexes.
@@ -230,14 +238,7 @@ class MemoryDatabase:
         Raises:
             SchemaError: If schema creation fails
         """
-        # Check backend type and use appropriate schema initialization
-        backend_name_attr = getattr(self.connection, "backend_name", lambda: "unknown")
-        if callable(backend_name_attr):
-            backend_name = backend_name_attr()
-        else:
-            backend_name = backend_name_attr
-
-        if isinstance(backend_name, str) and backend_name.lower() == "ladybugdb":
+        if self._backend == self.LADYBUG:
             await self.initialize_ladybugdb_schema()
         else:
             await self.initialize_neo4j_schema()
@@ -258,13 +259,13 @@ class MemoryDatabase:
 
         # Create Memory node table using LadybugDB syntax
         create_memory_table = """
-        CREATE NODE TABLE Memory(
+        CREATE NODE TABLE IF NOT EXISTS Memory(
             id STRING PRIMARY KEY,
             type STRING,
             title STRING,
             content STRING,
             summary STRING,
-            tags STRING,
+            tags JSON,
             importance DOUBLE,
             confidence DOUBLE,
             created_at TIMESTAMP,
@@ -280,9 +281,9 @@ class MemoryDatabase:
         """
 
         # Create REL table for relationships using LadybugDB syntax
-        # This requires the Memory node table to exist first
+        # This requires Memory node table to exist first
         create_relationship_table = """
-        CREATE REL TABLE REL(
+        CREATE REL TABLE IF NOT EXISTS REL(
             FROM Memory TO Memory,
             id STRING,
             type STRING,
@@ -296,35 +297,14 @@ class MemoryDatabase:
         # LadybugDB doesn't support CREATE INDEX at all, so we skip indexes
         # The primary keys will provide indexing automatically
 
-        # Install and load FTS extension, then create fulltext index using LadybugDB syntax
-        fulltext_setup = [
-            "INSTALL FTS",
-            "LOAD EXTENSION FTS",
-            "CALL CREATE_FTS_INDEX('Memory', 'memory_content_index', ['title', 'content', 'summary'])",
-        ]
+        # Extensions (JSON, FTS) are loaded during backend connection in ladybugdb_backend.py
 
         # Execute schema creation
-        try:
-            await self.connection.execute_write_query(create_memory_table)
-            logger.debug("Created Memory node table")
-        except Exception as e:
-            if "already exists" not in str(e).lower():
-                logger.warning(f"Failed to create Memory node table: {e}")
+        await self.connection.execute_write_query(create_memory_table)
+        logger.debug("Created Memory node table")
 
-        try:
-            await self.connection.execute_write_query(create_relationship_table)
-            logger.debug("Created REL table for relationships")
-        except Exception as e:
-            if "already exists" not in str(e).lower():
-                logger.warning(f"Failed to create REL table: {e}")
-
-        for fts_index in fulltext_setup:
-            try:
-                await self.connection.execute_write_query(fts_index)
-                logger.debug(f"Created fulltext index: {fts_index}")
-            except Exception as e:
-                if "already exists" not in str(e).lower():
-                    logger.warning(f"Failed to create fulltext index: {e}")
+        await self.connection.execute_write_query(create_relationship_table)
+        logger.debug("Created REL table for relationships")
 
         logger.info("LadybugDB schema initialization completed")
 
@@ -394,6 +374,10 @@ class MemoryDatabase:
             # Convert memory to Neo4j properties
             memory_node = MemoryNode(memory=memory)
             properties = memory_node.to_neo4j_properties()
+
+            # LadybugDB with JSON extension: Convert tags list to JSON using to_json()
+            if self._backend == self.LADYBUG and isinstance(properties.get("tags"), list):
+                properties["tags"] = "to_json($tags)"
 
             query = """
             MERGE (m:Memory {id: $id})
@@ -477,6 +461,7 @@ class MemoryDatabase:
                 parameters["memory_types"] = [t.value for t in search_query.memory_types]
 
             if search_query.tags:
+                # Both Neo4j/Memgraph and LadybugDB (with JSON extension) support list operations
                 conditions.append("ANY(tag IN $tags WHERE tag IN m.tags)")
                 parameters["tags"] = search_query.tags
 
@@ -556,6 +541,7 @@ class MemoryDatabase:
                 parameters["memory_types"] = [t.value for t in search_query.memory_types]
 
             if search_query.tags:
+                # Both Neo4j/Memgraph and LadybugDB (with JSON extension) support list operations
                 conditions.append("ANY(tag IN $tags WHERE tag IN m.tags)")
                 parameters["tags"] = search_query.tags
 
@@ -870,10 +856,15 @@ class MemoryDatabase:
                 raise
             logger.error(f"Failed to get related memories for {memory_id}: {e}")
             raise DatabaseConnectionError(f"Failed to get related memories: {e}")
-    
+
     def _neo4j_to_memory(self, node_data: Dict[str, Any]) -> Optional[Memory]:
         """Convert Neo4j node data to Memory object."""
         try:
+            # Extract tags (LadybugDB JSON extension returns list directly like Neo4j/Memgraph)
+            tags_value = node_data.get("tags", [])
+            if not isinstance(tags_value, list):
+                tags_value = []
+
             # Extract basic memory fields
             memory_data = {
                 "id": node_data.get("id"),
@@ -881,7 +872,7 @@ class MemoryDatabase:
                 "title": node_data.get("title"),
                 "content": node_data.get("content"),
                 "summary": node_data.get("summary"),
-                "tags": node_data.get("tags", []),
+                "tags": tags_value,
                 "importance": node_data.get("importance", 0.5),
                 "confidence": node_data.get("confidence", 0.8),
                 "effectiveness": node_data.get("effectiveness"),

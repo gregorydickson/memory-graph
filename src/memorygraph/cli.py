@@ -662,13 +662,16 @@ Environment Variables:
     if args.backend:
         validate_backend(args.backend)
         os.environ["MEMORY_BACKEND"] = args.backend
+        Config.BACKEND = args.backend
 
     if args.profile:
         validate_profile(args.profile)
         os.environ["MEMORY_TOOL_PROFILE"] = args.profile
+        Config.TOOL_PROFILE = args.profile
 
     if args.log_level:
         os.environ["MEMORY_LOG_LEVEL"] = args.log_level
+        Config.LOG_LEVEL = args.log_level
 
     # Configure logging
     logging.basicConfig(
