@@ -198,7 +198,7 @@ class LadybugDBBackend(GraphBackend):
                 # Create Memory node table
                 """
                 CREATE NODE TABLE IF NOT EXISTS Memory(
-                    id STRING PRIMARY KEY,
+                    id UUID PRIMARY KEY,
                     type STRING,
                     title STRING,
                     content STRING,
@@ -221,7 +221,7 @@ class LadybugDBBackend(GraphBackend):
                 """
                 CREATE REL TABLE IF NOT EXISTS REL(
                     FROM Memory TO Memory,
-                    id STRING,
+                    id UUID,
                     type STRING,
                     properties STRING,
                     created_at TIMESTAMP,

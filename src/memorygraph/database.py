@@ -260,7 +260,7 @@ class MemoryDatabase:
         # Create Memory node table using LadybugDB syntax
         create_memory_table = """
         CREATE NODE TABLE IF NOT EXISTS Memory(
-            id STRING PRIMARY KEY,
+            id UUID PRIMARY KEY,
             type STRING,
             title STRING,
             content STRING,
@@ -285,7 +285,7 @@ class MemoryDatabase:
         create_relationship_table = """
         CREATE REL TABLE IF NOT EXISTS REL(
             FROM Memory TO Memory,
-            id STRING,
+            id UUID,
             type STRING,
             properties STRING,
             created_at TIMESTAMP,
@@ -375,20 +375,25 @@ class MemoryDatabase:
             memory_node = MemoryNode(memory=memory)
             properties = memory_node.to_neo4j_properties()
 
-            # LadybugDB with JSON extension: Convert tags list to JSON using to_json()
             if self._backend == self.LADYBUG and isinstance(properties.get("tags"), list):
-                properties["tags"] = "to_json($tags)"
+                tags_value = properties.pop("tags")
+                set_clauses = ", ".join([f"m.{k} = ${k}" for k in properties.keys()])
+                set_clauses += ", m.tags = to_json($tags)"
+                query = f"""
+                MERGE (m:Memory {{id: $id}})
+                SET {set_clauses}
+                RETURN m.id as id
+                """
+                params = {"id": uuid.UUID(memory.id), "tags": tags_value, **properties}
+            else:
+                query = """
+                MERGE (m:Memory {id: $id})
+                SET m += $properties
+                RETURN m.id as id
+                """
+                params = {"id": memory.id, "properties": properties}
 
-            query = """
-            MERGE (m:Memory {id: $id})
-            SET m += $properties
-            RETURN m.id as id
-            """
-
-            result = await self.connection.execute_write_query(
-                query,
-                {"id": memory.id, "properties": properties}
-            )
+            result = await self.connection.execute_write_query(query, params)
 
             if result:
                 logger.info(f"Stored memory: {memory.id} ({memory.type})")
@@ -421,7 +426,8 @@ class MemoryDatabase:
             RETURN m
             """
 
-            result = await self.connection.execute_read_query(query, {"memory_id": memory_id})
+            params = {"memory_id": uuid.UUID(memory_id)} if self._backend == self.LADYBUG else {"memory_id": memory_id}
+            result = await self.connection.execute_read_query(query, params)
 
             if not result:
                 return None
@@ -642,16 +648,25 @@ class MemoryDatabase:
             memory_node = MemoryNode(memory=memory)
             properties = memory_node.to_neo4j_properties()
 
-            query = """
-            MATCH (m:Memory {id: $id})
-            SET m += $properties
-            RETURN m.id as id
-            """
+            if self._backend == self.LADYBUG and isinstance(properties.get("tags"), list):
+                tags_value = properties.pop("tags")
+                set_clauses = ", ".join([f"m.{k} = ${k}" for k in properties.keys()])
+                set_clauses += ", m.tags = to_json($tags)"
+                query = f"""
+                MATCH (m:Memory {{id: $id}})
+                SET {set_clauses}
+                RETURN m.id as id
+                """
+                params = {"id": uuid.UUID(memory.id), "tags": tags_value, **properties}
+            else:
+                query = """
+                MATCH (m:Memory {id: $id})
+                SET m += $properties
+                RETURN m.id as id
+                """
+                params = {"id": memory.id, "properties": properties}
 
-            result = await self.connection.execute_write_query(
-                query,
-                {"id": memory.id, "properties": properties}
-            )
+            result = await self.connection.execute_write_query(query, params)
 
             success = len(result) > 0
             if success:
@@ -684,7 +699,8 @@ class MemoryDatabase:
             RETURN COUNT(m) as deleted_count
             """
 
-            result = await self.connection.execute_write_query(query, {"memory_id": memory_id})
+            params = {"memory_id": uuid.UUID(memory_id)} if self._backend == self.LADYBUG else {"memory_id": memory_id}
+            result = await self.connection.execute_write_query(query, params)
 
             success = result and result[0]["deleted_count"] > 0
             if success:
@@ -739,14 +755,12 @@ class MemoryDatabase:
             RETURN r.id as id
             """
 
-            result = await self.connection.execute_write_query(
-                query,
-                {
-                    "from_id": from_memory_id,
-                    "to_id": to_memory_id,
-                    "properties": props_dict
-                }
-            )
+            params = {
+                "from_id": uuid.UUID(from_memory_id) if self._backend == self.LADYBUG else from_memory_id,
+                "to_id": uuid.UUID(to_memory_id) if self._backend == self.LADYBUG else to_memory_id,
+                "properties": props_dict
+            }
+            result = await self.connection.execute_write_query(query, params)
 
             if result:
                 logger.info(f"Created relationship: {relationship_type.value} between {from_memory_id} and {to_memory_id}")
@@ -803,11 +817,12 @@ class MemoryDatabase:
                    properties(rel) as rel_props,
                    source.id as from_id,
                    target.id as to_id
-            ORDER BY rel.strength DESC, related.importance DESC
-            LIMIT 20
-            """
+             ORDER BY rel.strength DESC, related.importance DESC
+             LIMIT 20
+             """
 
-            result = await self.connection.execute_read_query(query, {"memory_id": memory_id})
+            params = {"memory_id": uuid.UUID(memory_id)} if self._backend == self.LADYBUG else {"memory_id": memory_id}
+            result = await self.connection.execute_read_query(query, params)
 
             related_memories = []
             for record in result:
@@ -967,14 +982,12 @@ class MemoryDatabase:
             RETURN r
             """
 
-            result = await self.connection.execute_write_query(
-                query,
-                {
-                    "from_id": from_memory_id,
-                    "to_id": to_memory_id,
-                    "props": props_dict
-                }
-            )
+            params = {
+                "from_id": uuid.UUID(from_memory_id) if self._backend == self.LADYBUG else from_memory_id,
+                "to_id": uuid.UUID(to_memory_id) if self._backend == self.LADYBUG else to_memory_id,
+                "props": props_dict
+            }
+            result = await self.connection.execute_write_query(query, params)
 
             if not result:
                 raise RelationshipError(
