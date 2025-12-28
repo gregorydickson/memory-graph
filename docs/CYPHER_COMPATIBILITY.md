@@ -386,7 +386,7 @@ export MEMORY_BACKEND=ladybugdb
 export MEMORY_LADYBUGDB_PATH=~/.memorygraph/memory.lbdb
 
 # Auto-select (recommended)
-export MEMORY_BACKEND=auto  # Tries Neo4j → Memgraph → SQLite → LadybugDB
+export MEMORY_BACKEND=auto  # Tries Neo4j → Memgraph → SQLite
 ```
 
 ## Future Compatibility
