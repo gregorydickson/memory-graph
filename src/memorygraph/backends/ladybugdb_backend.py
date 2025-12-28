@@ -153,22 +153,18 @@ class LadybugDBBackend(GraphBackend):
             # Execute query using LadybugDB's connection with parameters
             result = self.graph.execute(query, parameters)
 
-            # Convert result to list of dictionaries
-            # LadybugDB returns either QueryResult or list[QueryResult]
-            # QueryResult has has_next()/get_next() methods
-            # get_next() returns the row data as a dictionary
+            # Convert result to list of dictionaries using get_as_pl() for consistent format
+            # Polars is used instead of pandas for better performance
             rows = []
             if isinstance(result, list):
                 # Handle multiple result sets (e.g., from multiple queries)
                 for single_result in result:
-                    while single_result.has_next():
-                        row_data = single_result.get_next()
-                        rows.append(row_data)
+                    df = single_result.get_as_pl()
+                    rows.extend(df.to_dicts())
             else:
                 # Handle single result set
-                while result.has_next():
-                    row_data = result.get_next()
-                    rows.append(row_data)
+                df = result.get_as_pl()
+                rows = df.to_dicts()
 
             return rows
 
@@ -206,8 +202,13 @@ class LadybugDBBackend(GraphBackend):
                     tags JSON,
                     importance DOUBLE,
                     confidence DOUBLE,
+                    effectiveness DOUBLE,
+                    usage_count INT,
                     created_at TIMESTAMP,
                     updated_at TIMESTAMP,
+                    last_accessed TIMESTAMP,
+                    version INT,
+                    updated_by STRING,
                     context_project_path STRING,
                     context_file_path STRING,
                     context_line_start INT,

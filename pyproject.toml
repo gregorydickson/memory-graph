@@ -49,6 +49,8 @@ falkordblite = [
 ]
 ladybugdb = [
     "real-ladybug>=0.12.2",
+    "polars>=1.36.1",
+    "pyarrow>=15.0.0",
 ]
 turso = [
     "libsql-experimental>=0.0.30",
