@@ -103,8 +103,7 @@ class LadybugDBBackend(GraphBackend):
             try:
                 self.graph.execute("INSTALL FTS")
                 self.graph.execute("LOAD EXTENSION FTS")
-                self.graph.execute("CALL CREATE_FTS_INDEX('Memory', 'memory_content_index', ['title', 'content', 'summary'])")
-                logger.info("Loaded FTS extension and created fulltext index for LadybugDB")
+                logger.info("Loaded FTS extension for LadybugDB")
             except Exception as e:
                 logger.warning(f"Failed to load FTS extension: {e}")
 
