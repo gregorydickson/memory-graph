@@ -47,20 +47,6 @@ Get persistent memory working in OpenCode in under 2 minutes.
 2. Install: `pipx install memorygraphMCP`
 
 3. Config:
-```json
-{
-  "mcp": {
-    "memorygraph": {
-      "type": "local",
-      "command": ["memorygraph", "--backend", "cloud"],
-      "enabled": true,
-      "environment": {
-        "MEMORYGRAPH_API_KEY": "mg_your_key"
-      }
-    }
-  }
-}
-```
 
 4. Restart and verify
 
