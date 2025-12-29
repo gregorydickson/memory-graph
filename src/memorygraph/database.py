@@ -1043,8 +1043,8 @@ class MemoryDatabase:
                 "confidence": node_data.get("confidence", 0.8),
                 "effectiveness": node_data.get("effectiveness"),
                 "usage_count": node_data.get("usage_count", 0),
-                "created_at": node_data.get("created_at") if isinstance(node_data.get("created_at"), datetime) else datetime.fromisoformat(node_data.get("created_at")),
-                "updated_at": node_data.get("updated_at") if isinstance(node_data.get("updated_at"), datetime) else datetime.fromisoformat(node_data.get("updated_at")),
+                "created_at": node_data.get("created_at") if isinstance(node_data.get("created_at"), datetime) else (datetime.fromisoformat(node_data["created_at"]) if node_data.get("created_at") else None),
+                "updated_at": node_data.get("updated_at") if isinstance(node_data.get("updated_at"), datetime) else (datetime.fromisoformat(node_data["updated_at"]) if node_data.get("updated_at") else None),
             }
 
             # Handle optional last_accessed field
