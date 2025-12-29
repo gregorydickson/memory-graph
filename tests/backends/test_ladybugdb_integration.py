@@ -107,11 +107,12 @@ class TestLadybugDBIntegration:
         result = await backend.execute_query(query)
 
         assert len(result) == 1
-        # LadybugDB returns results as lists
+        # Results are returned as dictionaries
         row = result[0]
-        assert len(row) == 2  # id and name
-        assert row[1] == "test_node"  # name field
-        assert row[0] == node_id  # id field
+        assert "n.name" in row  # name field
+        assert "n.id" in row  # id field
+        assert row["n.name"] == "test_node"  # name field
+        assert row["n.id"] == node_id  # id field
 
     @pytest.mark.asyncio
     async def test_create_relationship(self, backend):
@@ -164,7 +165,7 @@ class TestLadybugDBIntegration:
 
         assert len(result) == 1
         row = result[0]
-        assert row[0] == 1  # count should be 1
+        assert row["rel_count"] == 1  # count should be 1
 
     @pytest.mark.asyncio
     async def test_query_with_no_results(self, backend):
@@ -208,8 +209,8 @@ class TestLadybugDBIntegration:
         # Check that we have 3 results
         for i, row_data in enumerate(result):
             row = row_data
-            assert len(row) == 2  # id and name
-            assert row[1] == f"node_{i}"  # name field
+            assert "n.id" in row and "n.name" in row
+            assert row["n.name"] == f"node_{i}"  # name field
 
     @pytest.mark.asyncio
     async def test_error_handling(self, backend):
@@ -241,7 +242,7 @@ class TestLadybugDBIntegration:
         )
         assert len(result) == 1
         row = result[0]
-        assert row[0] == 1  # count should be 1
+        assert row["count"] == 1  # count should be 1
 
         # Create another backend instance to same database
         backend2 = LadybugDBBackend(
@@ -256,7 +257,7 @@ class TestLadybugDBIntegration:
             )
             assert len(result2) == 1
             row2 = result2[0]
-            assert row2[0] == 1  # count should be 1
+            assert row2["count"] == 1  # count should be 1
         finally:
             await backend2.disconnect()
 
@@ -326,12 +327,12 @@ class TestLadybugDBIntegration:
         assert len(result) == 1, f"Expected 1 result, got {len(result)}"
         row = result[0]
 
-        # LadybugDB returns a list of values (one per RETURN field)
+        # Results are returned as dictionaries
         # We RETURN m.title, m.content, m.importance
-        assert len(row) == 3
-        assert row[0] == title
-        assert row[1] == content
-        assert row[2] == importance
+        assert "m.title" in row and "m.content" in row and "m.importance" in row
+        assert row["m.title"] == title
+        assert row["m.content"] == content
+        assert row["m.importance"] == importance
 
     @pytest.mark.asyncio
     async def test_store_multiple_memories_and_search_with_parameters(self, backend):
@@ -380,7 +381,7 @@ class TestLadybugDBIntegration:
         """
         result1 = await backend.execute_query(query1, {"search_term": "icecream"})
         assert len(result1) == 2
-        assert "icecream" in result1[0][0]
+        assert "icecream" in result1[0]["m.content"]
 
         # Test 2: Filter by importance
         query2 = """
@@ -392,7 +393,7 @@ class TestLadybugDBIntegration:
         result2 = await backend.execute_query(query2, {"min_importance": 0.6})
         assert len(result2) == 2
         for row in result2:
-            assert row[1] >= 0.6
+            assert row["m.importance"] >= 0.6
 
         # Test 3: Multiple parameters
         query3 = """
@@ -413,8 +414,8 @@ class TestLadybugDBIntegration:
         # Both preference memories match (0.7 and 0.5)
         assert len(result3) == 2
         for row in result3:
-            assert row[1] == "preference"
-            assert row[2] >= 0.5
+            assert row["m.type"] == "preference"
+            assert row["m.importance"] >= 0.5
 
 
 # Import here to avoid import errors when real_ladybug is not available

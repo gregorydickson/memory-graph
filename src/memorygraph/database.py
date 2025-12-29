@@ -263,11 +263,14 @@ class MemoryDatabase:
             "usage_count": memory.usage_count,
             "created_at": memory.created_at,
             "updated_at": memory.updated_at,
+            "version": memory.version,
         }
 
         # Add optional fields
         if memory.summary:
             params["summary"] = memory.summary
+        if memory.updated_by:
+            params["updated_by"] = memory.updated_by
         if memory.effectiveness is not None:
             params["effectiveness"] = memory.effectiveness
         if memory.last_accessed:
@@ -366,10 +369,14 @@ class MemoryDatabase:
             tags JSON,
             importance DOUBLE,
             confidence DOUBLE,
+            effectiveness DOUBLE,
+            usage_count INT,
             created_at TIMESTAMP,
             updated_at TIMESTAMP,
+            last_accessed TIMESTAMP,
+            version INT,
+            updated_by STRING,
             context_project_path STRING,
-            context_file_path STRING,
             context_line_start INT,
             context_line_end INT,
             context_commit_hash STRING,
@@ -986,27 +993,26 @@ class MemoryDatabase:
                 "confidence": node_data.get("confidence", 0.8),
                 "effectiveness": node_data.get("effectiveness"),
                 "usage_count": node_data.get("usage_count", 0),
+                "last_accessed": node_data.get("last_accessed"),
                 "created_at": node_data.get("created_at"),  # Already datetime
                 "updated_at": node_data.get("updated_at"),  # Already datetime
+                "version": node_data.get("version", 1),
+                "updated_by": node_data.get("updated_by"),
             }
-
-            # Handle optional last_accessed field
-            if node_data.get("last_accessed"):
-                memory_data["last_accessed"] = node_data["last_accessed"]  # Already datetime
 
             # Extract context information
             context_data = {}
-            for key, value in node_data.items():
-                if key.startswith("context_") and value is not None:
-                    context_key = key[8:]  # Remove "context_" prefix
-                    # Values are already deserialized if they were stored as JSON strings
-                    if isinstance(value, str) and value.startswith(('[', '{')):
-                        try:
-                            context_data[context_key] = json.loads(value)
-                        except json.JSONDecodeError:
-                            context_data[context_key] = value
-                    else:
-                        context_data[context_key] = value
+            context_field_mapping = {
+                "context_project_path": "project_path",
+                "context_file_path": "file_path",
+                "context_line_start": "line_start",
+                "context_line_end": "line_end",
+                "context_commit_hash": "git_commit",
+                "context_branch": "git_branch",
+            }
+            for db_field, context_key in context_field_mapping.items():
+                if db_field in node_data and node_data[db_field] is not None:
+                    context_data[context_key] = node_data[db_field]
 
             if context_data:
                 memory_data["context"] = MemoryContext(**context_data)

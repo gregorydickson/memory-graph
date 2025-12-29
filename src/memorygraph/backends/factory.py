@@ -254,8 +254,8 @@ class BackendFactory:
 
         backend = LadybugDBBackend(db_path=db_path)
         await backend.connect()
-        # Schema managed externally - assumes database is already configured
-        # NOTE: Unlike SQLite/Turso, LadybugDB schema is not auto-initialized
+        # Initialize schema for LadybugDB (required for proper table creation)
+        await backend.initialize_schema()
         return backend
 
     @staticmethod

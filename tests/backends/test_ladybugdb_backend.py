@@ -52,8 +52,12 @@ def setup_mock_ladybug(result_set=None):
     mock_client = Mock()
     mock_connection = Mock()
     mock_result = Mock()
+    mock_pl_result = Mock()
+    mock_pl_result.to_dicts.return_value = result_set or []
 
     # Set up the result to behave like LadybugDB QueryResult
+    mock_result.get_as_pl.return_value = mock_pl_result
+
     if result_set:
         mock_result.has_next.side_effect = [True] * len(result_set) + [False]
         mock_result.get_next.side_effect = result_set

@@ -199,6 +199,7 @@ class TestBackendTypeDetection:
             with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
+                mock_instance.initialize_schema = AsyncMock()
                 MockLadybugDB.return_value = mock_instance
 
                 backend = await BackendFactory.create_backend()
@@ -366,6 +367,7 @@ class TestBackendCreation:
             with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
                 mock_instance = MagicMock()
                 mock_instance.connect = AsyncMock()
+                mock_instance.initialize_schema = AsyncMock()
                 MockLadybugDB.return_value = mock_instance
 
                 backend = await BackendFactory._create_ladybugdb()
@@ -598,15 +600,13 @@ class TestHelperMethods:
     async def test_create_ladybugdb_with_path_helper(self):
         """Test _create_ladybugdb_with_path helper."""
         from src.memorygraph.backends.factory import BackendFactory
+        from src.memorygraph.backends.ladybugdb_backend import LadybugDBBackend
 
-        with patch('src.memorygraph.backends.ladybugdb_backend.LadybugDBBackend') as MockLadybugDB:
-            mock_instance = MagicMock()
-            mock_instance.connect = AsyncMock()
-            MockLadybugDB.return_value = mock_instance
-
+        with patch.object(LadybugDBBackend, 'connect', new=AsyncMock()):
             backend = await BackendFactory._create_ladybugdb_with_path('/test/ladybug.db')
 
-            MockLadybugDB.assert_called_once_with(db_path='/test/ladybug.db')
+        assert isinstance(backend, LadybugDBBackend)
+        assert backend.db_path == '/test/ladybug.db'
 
     @pytest.mark.asyncio
     async def test_create_neo4j_with_config_helper(self):
